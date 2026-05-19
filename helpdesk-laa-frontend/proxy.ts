@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { verifyToken, cookieName } from "@/lib/auth";
 import { rateLimit } from "@/lib/rateLimit";
 
 const loginLimiter = rateLimit({ interval: 15 * 60_000, limit: 10 });
@@ -13,30 +14,53 @@ function getIP(req: NextRequest): string {
   );
 }
 
-export function proxy(req: NextRequest) {
-  const ip = getIP(req);
-  const { pathname } = req.nextUrl;
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const ip = getIP(request);
 
-  if (pathname === "/api/auth/login") {
-    if (!loginLimiter.check(ip)) {
-      return NextResponse.json(
-        { status: "error", message: "Terlalu banyak percobaan login. Coba lagi dalam 15 menit." },
-        { status: 429, headers: { "Retry-After": "900" } },
-      );
+  // ── Rate limiting pada semua API route ──
+  if (pathname.startsWith("/api/")) {
+    let allowed = true;
+    if (pathname === "/api/auth/login") {
+      allowed = loginLimiter.check(ip);
+    } else if (pathname === "/api/auth/reset-password") {
+      allowed = resetLimiter.check(ip);
+    } else {
+      allowed = generalLimiter.check(ip);
     }
-  } else if (pathname === "/api/auth/reset-password") {
-    if (!resetLimiter.check(ip)) {
-      return NextResponse.json(
-        { status: "error", message: "Terlalu banyak permintaan reset. Coba lagi nanti." },
-        { status: 429 },
-      );
-    }
-  } else if (pathname.startsWith("/api/")) {
-    if (!generalLimiter.check(ip)) {
+    if (!allowed) {
       return NextResponse.json(
         { status: "error", message: "Terlalu banyak permintaan. Coba lagi sebentar lagi." },
-        { status: 429 },
+        {
+          status: 429,
+          headers: pathname === "/api/auth/login" ? { "Retry-After": "900" } : {},
+        },
       );
+    }
+  }
+
+  // ── Proteksi /dashboard — redirect ke / jika tidak terautentikasi ──
+  if (pathname.startsWith("/dashboard")) {
+    const token = request.cookies.get(cookieName())?.value;
+    if (!token) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    const session = await verifyToken(token);
+    if (!session) {
+      const response = NextResponse.redirect(new URL("/", request.url));
+      response.cookies.set(cookieName(), "", { maxAge: 0, path: "/" });
+      return response;
+    }
+  }
+
+  // ── Jika sudah login dan akses / → redirect ke /dashboard/chat ──
+  if (pathname === "/") {
+    const token = request.cookies.get(cookieName())?.value;
+    if (token) {
+      const session = await verifyToken(token);
+      if (session) {
+        return NextResponse.redirect(new URL("/dashboard/chat", request.url));
+      }
     }
   }
 
@@ -44,5 +68,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/api/:path*"],
+  matcher: ["/", "/dashboard/:path*", "/api/:path*"],
 };

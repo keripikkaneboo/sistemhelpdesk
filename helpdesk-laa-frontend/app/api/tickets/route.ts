@@ -15,7 +15,13 @@ export async function GET() {
     const result = await pool.query(
       `SELECT
           t.*,
-          l.nama_layanan
+          l.nama_layanan,
+          COALESCE((
+            SELECT COUNT(*)::int
+            FROM ticket_messages
+            WHERE ticket_id = t.id
+              AND sender_type = 'admin'
+          ), 0) AS admin_reply_count
        FROM tickets t
        LEFT JOIN layanan_master l ON t.layanan_id = l.id
        WHERE t.nim = $1
