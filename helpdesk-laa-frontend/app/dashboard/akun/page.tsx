@@ -6,12 +6,15 @@ import { useUser } from "@/lib/UserContext";
 
 export default function AkunPage() {
   const router = useRouter();
-  const { nimNip, userName, userRole, userEmail, setUserEmail } = useUser();
+  const { nimNip, userName, userRole, userEmail, prodi, kelas, kodeDosen, setUserEmail } = useUser();
 
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [newEmailInput, setNewEmailInput] = useState("");
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [passwordStatus, setPasswordStatus] = useState("");
+
+  const isMahasiswa = userRole?.toLowerCase() === "mahasiswa";
+  const isDosen = userRole?.toLowerCase() === "dosen";
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -38,9 +41,9 @@ export default function AkunPage() {
       <div className="flex-1 p-4 md:p-6 flex flex-col min-h-0">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col flex-1">
 
-          {/* Profil — layout horizontal agar hemat ruang */}
+          {/* Profil — layout horizontal */}
           <div className="bg-red-50 px-6 py-4 flex items-center gap-4 border-b border-gray-100 shrink-0">
-            <div className="w-14 h-14 rounded-full bg-white border-2 border-white shadow flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="w-14 h-14 rounded-full border-2 border-white shadow flex items-center justify-center shrink-0 overflow-hidden">
               <img
                 src={`https://ui-avatars.com/api/?name=${encodeURIComponent(userName || "U")}&background=E11D48&color=fff&size=96&bold=true`}
                 alt="Avatar"
@@ -60,6 +63,30 @@ export default function AkunPage() {
               <span className="text-sm text-gray-500 font-medium">Username (NIM/NIP)</span>
               <span className="text-gray-800 font-bold text-sm">{nimNip}</span>
             </div>
+
+            {/* Program Studi */}
+            {prodi && (
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <span className="text-sm text-gray-500 font-medium">Program Studi</span>
+                <span className="text-gray-800 font-bold text-sm text-right max-w-[60%]">{prodi}</span>
+              </div>
+            )}
+
+            {/* Kelas — hanya mahasiswa */}
+            {isMahasiswa && kelas && (
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <span className="text-sm text-gray-500 font-medium">Kelas</span>
+                <span className="text-gray-800 font-bold text-sm">{kelas}</span>
+              </div>
+            )}
+
+            {/* Kode Dosen — hanya dosen */}
+            {isDosen && kodeDosen && (
+              <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+                <span className="text-sm text-gray-500 font-medium">Kode Dosen</span>
+                <span className="text-gray-800 font-bold text-sm">{kodeDosen}</span>
+              </div>
+            )}
 
             {/* Email */}
             <div className="flex flex-col border-b border-gray-100 pb-3 gap-2">

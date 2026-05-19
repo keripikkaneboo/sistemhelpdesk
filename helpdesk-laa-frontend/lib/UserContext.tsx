@@ -7,6 +7,9 @@ type UserData = {
   userName: string;
   userRole: string;
   userEmail: string;
+  prodi: string;
+  kelas: string;
+  kodeDosen: string;
   isLoadingUser: boolean;
   setUserEmail: (email: string) => void;
 };
@@ -16,6 +19,9 @@ const defaultValue: UserData = {
   userName: "",
   userRole: "",
   userEmail: "",
+  prodi: "",
+  kelas: "",
+  kodeDosen: "",
   isLoadingUser: true,
   setUserEmail: () => {},
 };
@@ -31,6 +37,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [userName, setUserName] = useState("");
   const [userRole, setUserRole] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [prodi, setProdi] = useState("");
+  const [kelas, setKelas] = useState("");
+  const [kodeDosen, setKodeDosen] = useState("");
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   useEffect(() => {
@@ -42,6 +51,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           setUserName(data.nama);
           setUserRole(data.role);
           setUserEmail(data.email || "");
+          setProdi(data.prodi || "");
+          setKelas(data.kelas || "");
+          setKodeDosen(data.kode_dosen || "");
         }
       })
       .catch(() => {})
@@ -50,7 +62,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <UserContext.Provider
-      value={{ nimNip, userName, userRole, userEmail, isLoadingUser, setUserEmail }}
+      value={{
+        nimNip, userName, userRole, userEmail,
+        prodi, kelas, kodeDosen,
+        isLoadingUser, setUserEmail,
+      }}
     >
       {children}
     </UserContext.Provider>
