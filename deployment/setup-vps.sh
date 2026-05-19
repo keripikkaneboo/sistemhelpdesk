@@ -23,20 +23,24 @@ echo ""
 echo "=== [1/10] Update sistem & install dependensi ==="
 # =============================================================================
 apt update && apt upgrade -y
-apt install -y git curl wget nginx certbot python3-certbot-nginx \
+apt install -y git curl wget nginx \
   python3.12 python3.12-venv python3-pip build-essential \
-  postgresql postgresql-contrib postgresql-server-dev-all \
+  postgresql postgresql-contrib \
+  postgresql-16-pgvector \
   fail2ban
 
+# Certbot via snap (rekomendasi resmi Ubuntu 24.04)
+snap install --classic certbot
+ln -sf /snap/bin/certbot /usr/bin/certbot
+apt install -y python3-certbot-nginx
+
 # =============================================================================
-echo "=== [2/10] Install pgvector extension ==="
+echo "=== [2/10] Verifikasi pgvector (sudah diinstall via apt) ==="
 # =============================================================================
-cd /tmp
-if [ ! -d "pgvector" ]; then
-  git clone https://github.com/pgvector/pgvector.git
-fi
-cd pgvector && make && make install
-echo "pgvector berhasil diinstall"
+# Di Ubuntu 24.04, postgresql-16-pgvector diinstall via apt pada step sebelumnya
+# Verifikasi extension tersedia:
+sudo -u postgres psql -c "SELECT * FROM pg_available_extensions WHERE name='vector';" | grep vector
+echo "pgvector tersedia via apt (postgresql-16-pgvector)"
 
 # =============================================================================
 echo "=== [3/10] Setup PostgreSQL + database ==="
@@ -49,8 +53,9 @@ ALTER USER postgres WITH PASSWORD '$DB_PASS';
 SQL
 
 # Konfigurasi PostgreSQL untuk koneksi SSL dari Vercel
-PGCONF=$(find /etc/postgresql -name "postgresql.conf" | head -1)
-PGHBA=$(find /etc/postgresql -name "pg_hba.conf" | head -1)
+# Ubuntu 24.04: PostgreSQL 16
+PGCONF="/etc/postgresql/16/main/postgresql.conf"
+PGHBA="/etc/postgresql/16/main/pg_hba.conf"
 
 sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" "$PGCONF"
 sed -i "s/listen_addresses = 'localhost'/listen_addresses = '*'/" "$PGCONF"
