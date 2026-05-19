@@ -1,62 +1,149 @@
 #!/bin/bash
 # =============================================================================
-# setup-vps.sh — Script setup awal Hostinger VPS untuk backend_chatbot
-# Jalankan sebagai root di VPS Ubuntu 22.04:
-#   bash setup-vps.sh
+# setup-vps.sh — Script setup VPS Hostinger Malaysia untuk backend_chatbot
+# OS Target: Ubuntu 22.04 LTS
+# Jalankan sebagai root: bash setup-vps.sh
 # =============================================================================
 set -e
 
-DOMAIN="api.DOMAIN-ANDA.com"   # <-- GANTI dengan domain Anda
+DOMAIN="api.DOMAIN-ANDA.com"   # <-- GANTI dengan domain Anda sebelum run
+DB_NAME="helpdesk_db"
+DB_PASS="GANTI_PASSWORD_KUAT"  # <-- GANTI dengan password kuat (min 20 karakter)
 DEPLOY_DIR="/opt/helpdesk-backend"
 
-echo "=== [1/7] Update sistem ==="
+echo "================================================================="
+echo " Helpdesk LAA — VPS Setup Script"
+echo " Domain  : $DOMAIN"
+echo " DB      : $DB_NAME"
+echo " Deploy  : $DEPLOY_DIR"
+echo "================================================================="
+echo ""
+
+# =============================================================================
+echo "=== [1/10] Update sistem & install dependensi ==="
+# =============================================================================
 apt update && apt upgrade -y
 apt install -y git curl wget nginx certbot python3-certbot-nginx \
-  python3.11 python3.11-venv python3-pip build-essential \
-  postgresql-client
+  python3.12 python3.12-venv python3-pip build-essential \
+  postgresql postgresql-contrib postgresql-server-dev-all \
+  fail2ban
 
-echo "=== [2/7] Buat user chatbot ==="
+# =============================================================================
+echo "=== [2/10] Install pgvector extension ==="
+# =============================================================================
+cd /tmp
+if [ ! -d "pgvector" ]; then
+  git clone https://github.com/pgvector/pgvector.git
+fi
+cd pgvector && make && make install
+echo "pgvector berhasil diinstall"
+
+# =============================================================================
+echo "=== [3/10] Setup PostgreSQL + database ==="
+# =============================================================================
+sudo -u postgres psql << SQL
+CREATE DATABASE IF NOT EXISTS $DB_NAME;
+\c $DB_NAME
+CREATE EXTENSION IF NOT EXISTS vector;
+ALTER USER postgres WITH PASSWORD '$DB_PASS';
+SQL
+
+# Konfigurasi PostgreSQL untuk koneksi SSL dari Vercel
+PGCONF=$(find /etc/postgresql -name "postgresql.conf" | head -1)
+PGHBA=$(find /etc/postgresql -name "pg_hba.conf" | head -1)
+
+sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" "$PGCONF"
+sed -i "s/listen_addresses = 'localhost'/listen_addresses = '*'/" "$PGCONF"
+
+# Backup pg_hba.conf asli
+cp "$PGHBA" "${PGHBA}.bak"
+
+# Set pg_hba.conf: SSL wajib + scram-sha-256
+cat > "$PGHBA" << 'PGHBA_EOF'
+# PostgreSQL Client Authentication Configuration
+# TYPE  DATABASE  USER      ADDRESS       METHOD
+local   all       postgres                peer
+local   all       all                     md5
+hostssl all       all       0.0.0.0/0     scram-sha-256
+PGHBA_EOF
+
+systemctl restart postgresql
+echo "PostgreSQL SSL: $(sudo -u postgres psql -c 'SHOW ssl;' -t | tr -d ' ')"
+
+# =============================================================================
+echo "=== [4/10] Setup fail2ban untuk proteksi brute force ==="
+# =============================================================================
+cat > /etc/fail2ban/filter.d/postgresql.conf << 'EOF'
+[Definition]
+failregex = ^.*FATAL:  password authentication failed for user.*$
+            ^.*FATAL:  no pg_hba.conf entry for host.*$
+ignoreregex =
+journalmatch = _SYSTEMD_UNIT=postgresql.service
+EOF
+
+cat > /etc/fail2ban/jail.d/postgresql.conf << 'EOF'
+[postgresql]
+enabled  = true
+filter   = postgresql
+logpath  = /var/log/postgresql/postgresql-*.log
+maxretry = 5
+bantime  = 3600
+findtime = 600
+EOF
+
+systemctl restart fail2ban
+echo "fail2ban aktif: $(fail2ban-client status postgresql 2>/dev/null | grep 'Currently banned' || echo 'OK')"
+
+# =============================================================================
+echo "=== [5/10] Buat user chatbot & direktori deploy ==="
+# =============================================================================
 if ! id "chatbot" &>/dev/null; then
   adduser --disabled-password --gecos "" chatbot
 fi
 mkdir -p "$DEPLOY_DIR"
 chown chatbot:chatbot "$DEPLOY_DIR"
 
-echo "=== [3/7] Upload file backend ==="
+# =============================================================================
+echo "=== [6/10] Upload file backend ==="
+# =============================================================================
 echo ""
-echo ">>> Jalankan perintah ini dari MESIN LOKAL Anda (bukan dari sini):"
-echo "    scp -r sistemhelpdesk/backend_chatbot/* root@\$(hostname -I | awk '{print \$1}'):$DEPLOY_DIR/"
+echo ">>> Jalankan perintah ini dari MESIN LOKAL (PowerShell/terminal):"
+echo "    scp -r sistemhelpdesk/backend_chatbot/* root@$(curl -s https://api.ipify.org):$DEPLOY_DIR/"
 echo ""
-read -p "Tekan Enter setelah upload selesai..."
+read -rp "Tekan Enter setelah upload selesai..."
 
-echo "=== [4/7] Setup Python virtualenv ==="
+# =============================================================================
+echo "=== [7/10] Setup Python virtualenv & install dependensi ==="
+# =============================================================================
 cd "$DEPLOY_DIR"
-python3.11 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install fastapi uvicorn python-dotenv psycopg2-binary ollama \
   pydantic slowapi torch transformers PySastrawi
 
-echo "=== [5/7] Install Ollama ==="
+# Buat file .env produksi
+cat > "$DEPLOY_DIR/.env" << ENV_EOF
+DB_HOST=localhost
+DB_NAME=$DB_NAME
+DB_USER=postgres
+DB_PASS=$DB_PASS
+DB_PORT=5432
+CORS_ORIGINS=https://GANTI-FRONTEND.vercel.app,https://GANTI-ADMIN.vercel.app
+FRONTEND_URL=https://GANTI-FRONTEND.vercel.app
+ENV_EOF
+chmod 600 "$DEPLOY_DIR/.env"
+echo ".env dibuat di $DEPLOY_DIR/.env — update CORS_ORIGINS setelah deploy Vercel"
+
+# =============================================================================
+echo "=== [8/10] Install Ollama ==="
+# =============================================================================
 if ! command -v ollama &>/dev/null; then
   curl -fsSL https://ollama.com/install.sh | sh
 fi
 
-echo ""
-echo ">>> Pull model Ollama (proses ini bisa 5-15 menit)..."
-ollama pull nomic-embed-text
-ollama pull gemma3:27b-cloud
-
-echo "=== [6/7] Setup systemd services ==="
-cp "$DEPLOY_DIR/deployment/helpdesk-api.service" /etc/systemd/system/ 2>/dev/null || \
-  echo "Salin helpdesk-api.service manual ke /etc/systemd/system/"
-
-systemctl daemon-reload
-systemctl enable helpdesk-api
-systemctl start helpdesk-api
-
-# Pastikan Ollama service ada
-if ! systemctl is-enabled ollama &>/dev/null; then
+# Pastikan service ollama ada
+if ! systemctl is-enabled ollama &>/dev/null 2>&1; then
   cat > /etc/systemd/system/ollama.service << 'EOF'
 [Unit]
 Description=Ollama Service
@@ -76,29 +163,109 @@ EOF
   systemctl start ollama
 fi
 
-echo "=== [7/7] Konfigurasi Nginx & SSL ==="
-cp nginx-helpdesk-api.conf /etc/nginx/sites-available/helpdesk-api 2>/dev/null || \
-  echo "Salin nginx-helpdesk-api.conf ke /etc/nginx/sites-available/helpdesk-api lalu edit DOMAIN"
+echo ">>> Pull model Ollama (bisa memakan waktu lama)..."
+ollama pull nomic-embed-text
+ollama pull gemma3:27b-cloud
+echo "Model Ollama:"
+ollama list
 
-# Ganti placeholder domain di nginx config
-sed -i "s/api.DOMAIN-ANDA.com/$DOMAIN/g" /etc/nginx/sites-available/helpdesk-api
+# =============================================================================
+echo "=== [9/10] Setup systemd service FastAPI ==="
+# =============================================================================
+cat > /etc/systemd/system/helpdesk-api.service << EOF
+[Unit]
+Description=Helpdesk Chatbot FastAPI
+After=network.target ollama.service postgresql.service
+
+[Service]
+Type=simple
+User=chatbot
+WorkingDirectory=$DEPLOY_DIR
+Environment="PATH=$DEPLOY_DIR/venv/bin"
+ExecStart=$DEPLOY_DIR/venv/bin/uvicorn api_chatbot:app --host 127.0.0.1 --port 8000 --workers 2
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable helpdesk-api
+systemctl start helpdesk-api
+
+# =============================================================================
+echo "=== [10/10] Konfigurasi Nginx + Firewall + SSL ==="
+# =============================================================================
+cat > /etc/nginx/sites-available/helpdesk-api << NGINX_EOF
+server {
+    listen 80;
+    server_name $DOMAIN;
+    return 301 https://\$host\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name $DOMAIN;
+
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 120s;
+    }
+
+    location /ollama/ {
+        rewrite ^/ollama/(.*) /\$1 break;
+        proxy_pass http://127.0.0.1:11434;
+        proxy_read_timeout 60s;
+        limit_except POST OPTIONS { deny all; }
+    }
+}
+NGINX_EOF
 
 ln -sf /etc/nginx/sites-available/helpdesk-api /etc/nginx/sites-enabled/helpdesk-api
+rm -f /etc/nginx/sites-enabled/default
 nginx -t && systemctl reload nginx
 
 # Firewall
 ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
+ufw allow 5432/tcp
 ufw --force enable
 
-# SSL via Let's Encrypt
-certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos -m admin@DOMAIN-ANDA.com
+# SSL
+echo ">>> Setup SSL untuk $DOMAIN (DNS A record harus sudah propagasi)"
+certbot --nginx -d "$DOMAIN" --non-interactive --agree-tos \
+  -m "admin@$(echo $DOMAIN | cut -d'.' -f2-)" || \
+  echo "SSL gagal — pastikan DNS sudah propagasi lalu jalankan: certbot --nginx -d $DOMAIN"
+
 systemctl reload nginx
 
+# =============================================================================
 echo ""
-echo "=== SETUP SELESAI ==="
-echo "Cek status:"
-echo "  systemctl status helpdesk-api"
-echo "  systemctl status ollama"
-echo "  curl https://$DOMAIN/docs"
+echo "================================================================="
+echo " SETUP SELESAI"
+echo "================================================================="
+echo " IP VPS   : $(curl -s https://api.ipify.org)"
+echo " Domain   : https://$DOMAIN"
+echo " Database : $DB_NAME (password tersimpan di $DEPLOY_DIR/.env)"
+echo ""
+echo " Status service:"
+systemctl status helpdesk-api --no-pager -l | grep -E "Active|Main PID"
+systemctl status ollama --no-pager -l | grep -E "Active|Main PID"
+systemctl status postgresql --no-pager -l | grep -E "Active|Main PID"
+echo ""
+echo " LANGKAH SELANJUTNYA:"
+echo " 1. Migrasi database via pgAdmin 4 (lihat plan deployment)"
+echo " 2. Update CORS_ORIGINS di $DEPLOY_DIR/.env dengan URL Vercel"
+echo " 3. Deploy frontend ke Vercel dan set environment variables"
+echo "================================================================="
