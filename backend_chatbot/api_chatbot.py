@@ -28,10 +28,9 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Mengizinkan Next.js (frontend) untuk memanggil API ini
-_allowed_origins = [o for o in [
-    "http://localhost:3000",
-    os.getenv("FRONTEND_URL", ""),
-] if o]
+# CORS_ORIGINS: comma-separated list URL produksi, e.g. "https://app.vercel.app,https://admin.vercel.app"
+_cors_extra = [o.strip() for o in os.getenv("CORS_ORIGINS", os.getenv("FRONTEND_URL", "")).split(",") if o.strip()]
+_allowed_origins = ["http://localhost:3000", "http://localhost:3001"] + _cors_extra
 
 app.add_middleware(
     CORSMiddleware,
