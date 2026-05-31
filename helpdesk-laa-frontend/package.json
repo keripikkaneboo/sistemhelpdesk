@@ -1,7 +1,7 @@
 {
   "name": "helpdesk-laa-frontend",
   "version": "0.1.0",
-  "description": "Frontend chatbot Sistem Helpdesk LAA",
+  "description": "Frontend chatbot Sistem Helpdesk LAA FTE",
   "private": true,
   "scripts": {
     "dev": "cross-env NODE_OPTIONS='--max-old-space-size=4096' next dev",
