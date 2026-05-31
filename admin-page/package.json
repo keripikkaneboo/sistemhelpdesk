@@ -1,7 +1,7 @@
 {
   "name": "admin-page",
   "version": "0.1.0",
-  "description": "Admin panel untuk Sistem Helpdesk LAA berbasis Chatbot",
+  "description": "Admin panel untuk Sistem Helpdesk LAA",
   "private": true,
   "scripts": {
     "dev": "next dev",
