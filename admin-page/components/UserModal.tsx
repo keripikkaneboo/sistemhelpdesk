@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import CustomSelect from "@/components/CustomSelect";
 
 export type UserRole = "mahasiswa" | "dosen" | "admin";
 
@@ -131,11 +132,13 @@ export default function UserModal({ role, entry, onClose, onSave }: Props) {
             {role !== "admin" && (
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-gray-700">Program Studi</label>
-                <select value={form.prodi ?? ""} onChange={(e) => set("prodi", e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-red-300 transition bg-white">
-                  <option value="">-- Pilih Program Studi --</option>
-                  {PRODI_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
+                <CustomSelect
+                  value={form.prodi ?? ""}
+                  onChange={(v) => set("prodi", v)}
+                  size="sm"
+                  placeholder="-- Pilih Program Studi --"
+                  options={[{ value: "", label: "-- Pilih Program Studi --" }, ...PRODI_OPTIONS.map((p) => ({ value: p, label: p }))]}
+                />
               </div>
             )}
 

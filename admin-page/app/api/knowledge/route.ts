@@ -34,6 +34,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Intent wajib diisi" }, { status: 400 });
     }
 
+    const dup = await pool.query(
+      `SELECT id FROM knowledge_base
+       WHERE intent = $1 AND tipe_pengguna = $2 AND LOWER(tipe_layanan) = LOWER($3)`,
+      [intent, tipe_pengguna, tipe_layanan ?? "LAA"]
+    );
+    if (dup.rows.length > 0) {
+      return NextResponse.json({ error: "Knowledge untuk layanan ini sudah ada" }, { status: 409 });
+    }
+
     const embedding = await generateEmbedding(knowledgeFields({
       intent, tipe_pengguna, deskripsi, prosedur, syarat, estimasi_waktu, platform, pihak, catatan,
       unit_pengelola, kontak_referral,

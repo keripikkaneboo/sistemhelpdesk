@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { prodiColor } from "@/lib/badgeColors";
 import { getCache, setCache, invalidateCache } from "@/lib/dataCache";
 import Pagination from "@/components/Pagination";
+import CustomSelect from "@/components/CustomSelect";
 
 type DosenRow = {
   nip: string;
@@ -88,7 +89,7 @@ export default function KnowledgeDosen() {
       )}
 
       <div className="bg-white rounded-xl shadow-sm border border-[#e8edf5] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 gap-3 flex-wrap">
+        <div className="flex items-center justify-between px-3 py-2 md:px-6 md:py-4 border-b border-gray-100 gap-3 flex-wrap">
           <div>
             <h2 className="text-base font-semibold text-gray-700">
               Informasi Dosen{" "}
@@ -100,18 +101,13 @@ export default function KnowledgeDosen() {
           </div>
 
           <div className="flex items-center gap-2">
-            <select
+            <CustomSelect
               value={filterProdi}
-              onChange={(e) => handleFilterProdi(e.target.value)}
-              className={`border rounded-lg px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-red-300 transition bg-white ${
-                filterProdi ? "border-red-400 text-red-600" : "border-gray-200 text-gray-600"
-              }`}
-            >
-              <option value="">Semua Prodi</option>
-              {prodiOptions.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
+              onChange={(v) => handleFilterProdi(v)}
+              options={[{ value: "", label: "Semua Prodi" }, ...prodiOptions.map((p) => ({ value: p, label: p }))]}
+              size="sm"
+              className={filterProdi ? "border-red-400 text-red-600" : ""}
+            />
 
             <input
               type="text"
@@ -131,7 +127,7 @@ export default function KnowledgeDosen() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs md:text-sm">
             <thead>
               <tr>
                 <th className="th-cell w-10">No</th>
@@ -142,16 +138,16 @@ export default function KnowledgeDosen() {
                 <th className="th-cell">Program Studi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-200">
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="animate-pulse border-b border-gray-50">
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-6" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-28 font-mono" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-40" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
-                    <td className="px-6 py-4"><div className="h-6 bg-gray-100 rounded-full w-28" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-6" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-28 font-mono" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-40" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-16" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-6 bg-gray-100 rounded-full w-28" /></td>
                   </tr>
                 ))
               ) : filtered.length === 0 ? (
@@ -161,12 +157,12 @@ export default function KnowledgeDosen() {
               ) : (
                 paginated.map((entry, idx) => (
                   <tr key={entry.nip || idx} className="hover:bg-slate-50/80 transition">
-                    <td className="px-6 py-4 text-gray-500">{(page - 1) * PAGE_SIZE + idx + 1}</td>
-                    <td className="px-6 py-4 text-gray-600 font-mono text-xs">{entry.nip || "—"}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{entry.nama}</td>
-                    <td className="px-6 py-4 text-gray-600">{entry.kode_dosen || "—"}</td>
-                    <td className="px-6 py-4 text-gray-600">{entry.nidn_nuptk || "—"}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-500">{(page - 1) * PAGE_SIZE + idx + 1}</td>
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-600 font-mono text-xs">{entry.nip || "—"}</td>
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-800 font-medium">{entry.nama}</td>
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-600">{entry.kode_dosen || "—"}</td>
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-600">{entry.nidn_nuptk || "—"}</td>
+                    <td className="px-3 py-2 md:px-6 md:py-4">
                       {entry.prodi
                         ? <span className={`${prodiColor(entry.prodi)} text-xs font-medium px-2.5 py-1 rounded-full`}>{entry.prodi}</span>
                         : <span className="text-gray-400">—</span>}

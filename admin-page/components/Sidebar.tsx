@@ -18,6 +18,13 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const [adminName, setAdminName] = useState("Admin LAA");
   const [unreadCount, setUnreadCount] = useState(0);
 
+  const initials = (adminName || "A")
+    .split(" ")
+    .map((w: string) => w[0] ?? "")
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.ok ? r.json() : null)
@@ -31,6 +38,16 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         setUnreadCount(total);
       })
       .catch(() => {});
+  }, []);
+
+  // Update nama langsung saat profil disimpan
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { nama } = (e as CustomEvent<{ nama: string }>).detail;
+      if (nama) setAdminName(nama);
+    };
+    window.addEventListener("admin-profile-updated", handler);
+    return () => window.removeEventListener("admin-profile-updated", handler);
   }, []);
 
   // Auto-close drawer saat navigasi (mobile)
@@ -51,14 +68,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
       {/* Brand — horizontal layout (Design A) */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(220,38,38,0.4)]">
-          <Image
-            src="/logo-fte.png"
-            alt="FTE Telkom University"
-            width={26}
-            height={26}
-            className="object-contain"
-          />
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(220,38,38,0.4)] text-white font-bold text-sm select-none">
+          {initials}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-white text-[13px] font-bold leading-tight tracking-wide truncate">{adminName}</p>

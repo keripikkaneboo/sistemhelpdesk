@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import CustomSelect, { SelectOption, SelectGroup } from "@/components/CustomSelect";
 
 export type KnowledgeEntry = {
   id: number;
@@ -29,6 +30,7 @@ type Props = {
   entry?: KnowledgeEntry | null;
   onClose: () => void;
   onSave: (data: KnowledgeFormData) => void;
+  existingEntries?: KnowledgeEntry[];
 };
 
 const EMPTY: KnowledgeFormData = {
@@ -44,7 +46,7 @@ type Field = { key: keyof KnowledgeFormData; label: string; required?: boolean; 
 const FIELDS: Field[] = [
   { key: "intent",         label: "Intent",         required: true },
   { key: "deskripsi",      label: "Deskripsi",      multiline: true },
-  { key: "prosedur",       label: "Prosedur",       multiline: true },
+  { key: "prosedur",       label: "Prosedur",       required: true, multiline: true },
   { key: "syarat",         label: "Syarat",         multiline: true },
   { key: "estimasi_waktu", label: "Estimasi Waktu" },
   { key: "platform",       label: "Platform" },
@@ -52,7 +54,7 @@ const FIELDS: Field[] = [
   { key: "catatan",        label: "Catatan",        multiline: true },
 ];
 
-export default function KnowledgeModal({ entry, onClose, onSave }: Props) {
+export default function KnowledgeModal({ entry, onClose, onSave, existingEntries }: Props) {
   const [form, setForm] = useState<KnowledgeFormData>(EMPTY);
   const [error, setError] = useState("");
   const [layananOptions, setLayananOptions] = useState<{ id: number; nama_layanan: string; tipe_pengguna: string }[]>([]);
@@ -88,8 +90,30 @@ export default function KnowledgeModal({ entry, onClose, onSave }: Props) {
       setError("Intent wajib diisi.");
       return;
     }
+    if (!form.tipe_pengguna) {
+      setError("Tipe Pengguna wajib dipilih.");
+      return;
+    }
+    if (!form.deskripsi.trim()) {
+      setError("Deskripsi wajib diisi.");
+      return;
+    }
+    if (!isReferral && !form.prosedur.trim()) {
+      setError("Prosedur wajib diisi.");
+      return;
+    }
     if (form.tipe_layanan === "Referral" && !form.unit_pengelola.trim()) {
       setError("Unit Pengelola wajib diisi untuk tipe Referral.");
+      return;
+    }
+    const isDuplicate = (existingEntries ?? []).some(e =>
+      e.intent.trim().toLowerCase() === form.intent.trim().toLowerCase() &&
+      e.tipe_pengguna === form.tipe_pengguna &&
+      (e.tipe_layanan ?? "LAA") === form.tipe_layanan &&
+      e.id !== (entry?.id ?? -1)
+    );
+    if (isDuplicate) {
+      setError("Kombinasi layanan, tipe pengguna, dan tipe layanan ini sudah ada.");
       return;
     }
     onSave(form);
@@ -97,9 +121,21 @@ export default function KnowledgeModal({ entry, onClose, onSave }: Props) {
 
   const isReferral = form.tipe_layanan === "Referral";
 
+  const usedIntents = new Set(
+    (existingEntries ?? [])
+      .filter(e =>
+        e.tipe_pengguna === form.tipe_pengguna &&
+        (e.tipe_layanan ?? "LAA") === form.tipe_layanan &&
+        e.id !== (entry?.id ?? -1)
+      )
+      .map(e => e.intent)
+  );
+
   const filteredLayananOptions = form.tipe_pengguna
-    ? layananOptions.filter((o) => o.tipe_pengguna === form.tipe_pengguna)
-    : layananOptions;
+    ? layananOptions.filter(o =>
+        o.tipe_pengguna === form.tipe_pengguna && !usedIntents.has(o.nama_layanan)
+      )
+    : layananOptions.filter(o => !usedIntents.has(o.nama_layanan));
 
   const handleTipeLayananChange = (value: string) =>
     setForm((prev) => ({ ...prev, tipe_layanan: value, intent: "" }));
@@ -135,29 +171,24 @@ export default function KnowledgeModal({ entry, onClose, onSave }: Props) {
                   <div key={key} className="contents">
                     {/* Tipe Layanan dropdown */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-700">Tipe Layanan</label>
-                      <select
+                      <label className="text-sm font-medium text-gray-700">Tipe Layanan <span className="text-red-500">*</span></label>
+                      <CustomSelect
                         value={form.tipe_layanan}
-                        onChange={(e) => handleTipeLayananChange(e.target.value)}
-                        className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-red-300 transition bg-white"
-                      >
-                        <option value="LAA">LAA</option>
-                        <option value="Referral">Referral</option>
-                      </select>
+                        onChange={handleTipeLayananChange}
+                        size="sm"
+                        options={[{ value: "LAA", label: "LAA" }, { value: "Referral", label: "Referral" }]}
+                      />
                     </div>
                     {/* Tipe Pengguna dropdown */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-700">Tipe Pengguna</label>
-                      <select
+                      <label className="text-sm font-medium text-gray-700">Tipe Pengguna <span className="text-red-500">*</span></label>
+                      <CustomSelect
                         value={form.tipe_pengguna}
-                        onChange={(e) => handleTipePenggunaChange(e.target.value)}
-                        className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-red-300 transition bg-white"
-                      >
-                        <option value="">-- Pilih Tipe Pengguna --</option>
-                        {TIPE_OPTIONS.map((opt) => (
-                          <option key={opt} value={opt}>{opt}</option>
-                        ))}
-                      </select>
+                        onChange={handleTipePenggunaChange}
+                        size="sm"
+                        placeholder="-- Pilih Tipe Pengguna --"
+                        options={[{ value: "", label: "-- Pilih Tipe Pengguna --" }, ...TIPE_OPTIONS.map((t) => ({ value: t, label: t }))]}
+                      />
                     </div>
                     {/* Intent */}
                     <div className="flex flex-col gap-1.5">
@@ -173,34 +204,27 @@ export default function KnowledgeModal({ entry, onClose, onSave }: Props) {
                           className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-red-300 transition"
                         />
                       ) : (
-                        <select
+                        <CustomSelect
                           value={form.intent}
-                          onChange={(e) => set("intent", e.target.value)}
-                          className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 outline-none focus:ring-2 focus:ring-red-300 transition bg-white"
-                        >
-                          <option value="">-- Pilih Layanan --</option>
-                          {form.tipe_pengguna ? (
-                            filteredLayananOptions.map((o) => (
-                              <option key={o.id} value={o.nama_layanan}>{o.nama_layanan}</option>
-                            ))
-                          ) : (
-                            ["Mahasiswa", "Dosen"].map((tipe) => {
-                              const opts = layananOptions.filter((o) => o.tipe_pengguna === tipe);
-                              return opts.length > 0 ? (
-                                <optgroup key={tipe} label={`Layanan ${tipe}`}>
-                                  {opts.map((o) => (
-                                    <option key={o.id} value={o.nama_layanan}>{o.nama_layanan}</option>
-                                  ))}
-                                </optgroup>
-                              ) : null;
-                            })
-                          )}
-                        </select>
+                          onChange={(v) => set("intent", v)}
+                          size="sm"
+                          placeholder="-- Pilih Layanan --"
+                          options={form.tipe_pengguna
+                            ? [{ value: "", label: "-- Pilih Layanan --" }, ...filteredLayananOptions.map((o) => ({ value: o.nama_layanan, label: o.nama_layanan }))]
+                            : undefined}
+                          groups={!form.tipe_pengguna
+                            ? (["Mahasiswa", "Dosen"] as const).reduce<SelectGroup[]>((acc, tipe) => {
+                                const opts = layananOptions.filter((o) => o.tipe_pengguna === tipe);
+                                if (opts.length > 0) acc.push({ label: `Layanan ${tipe}`, options: opts.map((o): SelectOption => ({ value: o.nama_layanan, label: o.nama_layanan })) });
+                                return acc;
+                              }, [])
+                            : undefined}
+                        />
                       )}
                     </div>
                     {/* Deskripsi */}
                     <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-gray-700">{label}</label>
+                      <label className="text-sm font-medium text-gray-700">{label} <span className="text-red-500">*</span></label>
                       <textarea
                         value={form[key]}
                         onChange={(e) => set(key, e.target.value)}

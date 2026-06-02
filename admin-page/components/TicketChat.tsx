@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getCache, setCache, invalidateCache } from "@/lib/dataCache";
+import CustomSelect from "@/components/CustomSelect";
 
 type Ticket = {
   id: string;
@@ -436,21 +437,12 @@ export default function TicketChat() {
                   <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyle(selectedTicket.status)}`}>
                     {statusLabel(selectedTicket.status)}
                   </span>
-                  <div className="relative">
-                    <select
-                      value={selectedTicket.status}
-                      onChange={(e) => handleStatusChange(e.target.value)}
-                      disabled={updatingStatus}
-                      className="appearance-none border border-gray-200 rounded-lg text-xs px-3 py-1.5 pr-7 text-gray-600 outline-none focus:ring-2 focus:ring-red-300 bg-white cursor-pointer disabled:opacity-50 transition"
-                    >
-                      {STATUS_OPTIONS.map((s) => (
-                        <option key={s.value} value={s.value}>{s.label}</option>
-                      ))}
-                    </select>
-                    <svg xmlns="http://www.w3.org/2000/svg" className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
+                  <CustomSelect
+                    value={selectedTicket.status}
+                    onChange={(v) => handleStatusChange(v)}
+                    disabled={updatingStatus}
+                    options={STATUS_OPTIONS}
+                  />
                 </div>
               </div>
 

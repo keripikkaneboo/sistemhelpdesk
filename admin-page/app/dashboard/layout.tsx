@@ -68,10 +68,10 @@ export default function DashboardLayout({
       <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
 
         {/* ── Mobile topbar ── */}
-        <header className="md:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+        <header className="md:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 shadow-sm" style={{ background: "#1e2a3a" }}>
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
+            className="p-2 rounded-lg text-white hover:bg-[#243245] transition"
             aria-label="Buka menu"
             aria-expanded={sidebarOpen}
           >
@@ -79,18 +79,7 @@ export default function DashboardLayout({
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shrink-0 shadow-[0_2px_8px_rgba(220,38,38,0.35)]">
-              <Image
-                src="/logo-fte.png"
-                alt="FTE Telkom University"
-                width={18}
-                height={18}
-                className="object-contain"
-              />
-            </div>
-            <span className="text-sm font-bold text-gray-800 tracking-tight">LAA Admin</span>
-          </div>
+          <span className="text-sm font-bold text-white tracking-tight">Admin Panel Helpdesk LAA</span>
         </header>
 
         <main className="flex-1 flex flex-col min-h-screen overflow-x-hidden">

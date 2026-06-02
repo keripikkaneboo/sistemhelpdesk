@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { getCache, setCache, invalidateCache } from "@/lib/dataCache";
 import Pagination from "@/components/Pagination";
+import CustomSelect from "@/components/CustomSelect";
 
 type Ticket = {
   id: string;
@@ -359,45 +360,31 @@ export default function TicketPage() {
                   {/* Status */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Status</label>
-                    <select
+                    <CustomSelect
                       value={filterStatus}
-                      onChange={(e) => { setFilterStatus(e.target.value); resetPage(); }}
-                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-600 outline-none focus:ring-2 focus:ring-red-300 transition bg-white"
-                    >
-                      <option value="">Semua Status</option>
-                      {statusOptions.map((s) => (
-                        <option key={s} value={s}>{statusLabel(s)}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => { setFilterStatus(v); resetPage(); }}
+                      options={[{ value: "", label: "Semua Status" }, ...statusOptions.map((s) => ({ value: s, label: statusLabel(s) }))]}
+                    />
                   </div>
 
                   {/* Umur tiket */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Umur Tiket</label>
-                    <select
+                    <CustomSelect
                       value={filterAge}
-                      onChange={(e) => { setFilterAge(e.target.value); resetPage(); }}
-                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-600 outline-none focus:ring-2 focus:ring-red-300 transition bg-white"
-                    >
-                      {AGE_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => { setFilterAge(v); resetPage(); }}
+                      options={AGE_OPTIONS}
+                    />
                   </div>
 
                   {/* Handled By */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Handled By</label>
-                    <select
+                    <CustomSelect
                       value={filterHandledBy}
-                      onChange={(e) => { setFilterHandledBy(e.target.value); resetPage(); }}
-                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-600 outline-none focus:ring-2 focus:ring-red-300 transition bg-white"
-                    >
-                      <option value="">Semua Admin</option>
-                      {adminOptions.map((a) => (
-                        <option key={a} value={a}>{a === currentAdmin ? `${a} (Me)` : a}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => { setFilterHandledBy(v); resetPage(); }}
+                      options={[{ value: "", label: "Semua Admin" }, ...adminOptions.map((a) => ({ value: a, label: a === currentAdmin ? `${a} (Me)` : a }))]}
+                    />
                   </div>
 
                   {/* Rentang Tanggal */}
@@ -472,7 +459,7 @@ export default function TicketPage() {
         </div>
 
         <div className="overflow-x-auto rounded-b-xl">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs md:text-sm">
             <thead>
               <tr>
                 <th className="th-cell w-10">No</th>
@@ -488,26 +475,26 @@ export default function TicketPage() {
                 <th className="th-cell w-10" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-200">
               {loading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="animate-pulse border-b border-gray-50">
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-6" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20" /></td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-6" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4">
                       <div className="h-4 bg-gray-100 rounded w-32 mb-1.5" />
                       <div className="h-3 bg-gray-100 rounded w-20" />
                     </td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-40" /></td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-40" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4">
                       <div className="h-3 bg-gray-100 rounded w-48 mb-1.5" />
                       <div className="h-3 bg-gray-100 rounded w-32" />
                     </td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-14" /></td>
-                    <td className="px-6 py-4"><div className="h-6 bg-gray-100 rounded-full w-24" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-28" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-14" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-6 bg-gray-100 rounded-full w-24" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-28" /></td>
                     <td className="px-3 py-4" />
                   </tr>
                 ))
@@ -538,25 +525,25 @@ export default function TicketPage() {
                       onClick={() => router.push(`/dashboard/ticket/${ticket.id}`)}
                       className="hover:bg-slate-50/80 transition cursor-pointer"
                     >
-                      <td className="px-6 py-4 text-gray-500">{(page - 1) * PAGE_SIZE + idx + 1}</td>
-                      <td className="px-6 py-4 text-gray-600 font-mono text-xs">{ticket.id}</td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2 md:px-6 md:py-4 text-gray-500">{(page - 1) * PAGE_SIZE + idx + 1}</td>
+                      <td className="px-3 py-2 md:px-6 md:py-4 text-gray-600 font-mono text-xs">{ticket.id}</td>
+                      <td className="px-3 py-2 md:px-6 md:py-4">
                         <p className="text-gray-800 font-medium">{ticket.nama || "—"}</p>
                         {ticket.nim && <p className="text-gray-400 text-xs font-mono">{ticket.nim}</p>}
                       </td>
-                      <td className="px-6 py-4 text-gray-600 text-xs">
+                      <td className="px-3 py-2 md:px-6 md:py-4 text-gray-600 text-xs">
                         {ticket.nama_layanan || <span className="text-gray-300">—</span>}
                       </td>
-                      <td className="px-6 py-4 text-gray-700 max-w-[180px]">
+                      <td className="px-3 py-2 md:px-6 md:py-4 text-gray-700 max-w-[180px]">
                         <p className="truncate">{ticket.subject || "—"}</p>
                       </td>
-                      <td className="px-6 py-4 text-gray-500 max-w-[220px]">
+                      <td className="px-3 py-2 md:px-6 md:py-4 text-gray-500 max-w-[220px]">
                         <p className="line-clamp-2 text-xs leading-relaxed">{ticket.description || "—"}</p>
                       </td>
-                      <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
+                      <td className="px-3 py-2 md:px-6 md:py-4 text-gray-500 whitespace-nowrap">
                         {formatDate(ticketDate)}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                      <td className="px-3 py-2 md:px-6 md:py-4 whitespace-nowrap">
                         {(() => {
                           const isClosed = ticket.status?.toLowerCase() === "closed";
                           const endDate = isClosed ? ticket.updated_at : null;
@@ -568,12 +555,12 @@ export default function TicketPage() {
                           );
                         })()}
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2 md:px-6 md:py-4">
                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyle(ticket.status)}`}>
                           {statusLabel(ticket.status)}
                         </span>
                       </td>
-                      <td className="px-6 py-4">
+                      <td className="px-3 py-2 md:px-6 md:py-4">
                         {ticket.handled_by ? (
                           <span className={`text-xs font-medium ${ticket.handled_by === currentAdmin ? "text-red-600" : "text-gray-600"}`}>
                             {ticket.handled_by === currentAdmin ? "Me" : ticket.handled_by}

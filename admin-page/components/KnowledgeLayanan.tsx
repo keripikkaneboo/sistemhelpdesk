@@ -5,6 +5,7 @@ import KnowledgeModal, { KnowledgeEntry, KnowledgeFormData } from "@/components/
 import { tipeColor, tipoLayananColor } from "@/lib/badgeColors";
 import { getCache, setCache, invalidateCache } from "@/lib/dataCache";
 import Pagination from "@/components/Pagination";
+import CustomSelect from "@/components/CustomSelect";
 
 const CACHE_KEY_KNOWLEDGE = "knowledge";
 const PAGE_SIZE = 50;
@@ -173,7 +174,7 @@ export default function KnowledgeLayanan() {
 
       {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-[#e8edf5] overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="px-3 py-2 md:px-6 md:py-4 border-b border-gray-100 flex flex-col gap-2">
           <h2 className="text-base font-semibold text-gray-700">
             Daftar Knowledge <span className="text-gray-400 font-normal text-sm">({filtered.length} entri)</span>
           </h2>
@@ -206,33 +207,25 @@ export default function KnowledgeLayanan() {
               </button>
 
               {filterOpen && (
-                <div className="absolute right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg w-72 p-4 flex flex-col gap-4">
+                <div className="absolute left-0 md:left-auto md:right-0 top-full mt-1.5 z-30 bg-white border border-gray-200 rounded-xl shadow-lg w-72 p-4 flex flex-col gap-4">
                   {/* Tipe Pengguna */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Tipe Pengguna</label>
-                    <select
+                    <CustomSelect
                       value={filterTipePengguna}
-                      onChange={(e) => { setFilterTipePengguna(e.target.value); setPage(1); }}
-                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-600 outline-none focus:ring-2 focus:ring-red-300 transition bg-white"
-                    >
-                      <option value="">Semua Pengguna</option>
-                      <option value="Mahasiswa">Mahasiswa</option>
-                      <option value="Dosen">Dosen</option>
-                    </select>
+                      onChange={(v) => { setFilterTipePengguna(v); setPage(1); }}
+                      options={[{ value: "", label: "Semua Pengguna" }, { value: "Mahasiswa", label: "Mahasiswa" }, { value: "Dosen", label: "Dosen" }]}
+                    />
                   </div>
 
                   {/* Tipe Layanan */}
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Tipe Layanan</label>
-                    <select
+                    <CustomSelect
                       value={filterTipeLayanan}
-                      onChange={(e) => { setFilterTipeLayanan(e.target.value); setPage(1); }}
-                      className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-600 outline-none focus:ring-2 focus:ring-red-300 transition bg-white"
-                    >
-                      <option value="">Semua Tipe</option>
-                      <option value="LAA">LAA</option>
-                      <option value="Referral">Referral</option>
-                    </select>
+                      onChange={(v) => { setFilterTipeLayanan(v); setPage(1); }}
+                      options={[{ value: "", label: "Semua Tipe" }, { value: "LAA", label: "LAA" }, { value: "Referral", label: "Referral" }]}
+                    />
                   </div>
 
                   {/* Reset */}
@@ -254,7 +247,7 @@ export default function KnowledgeLayanan() {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
               placeholder="Cari intent atau deskripsi..."
-              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 placeholder-gray-400 outline-none focus:ring-2 focus:ring-red-300 transition w-64"
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-600 placeholder-gray-400 outline-none focus:ring-2 focus:ring-red-300 transition flex-1 min-w-0"
             />
 
             {/* Tambah Data */}
@@ -271,7 +264,7 @@ export default function KnowledgeLayanan() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-xs md:text-sm">
             <thead>
               <tr>
                 <th className="th-cell w-10">No</th>
@@ -284,21 +277,21 @@ export default function KnowledgeLayanan() {
                 <th className="th-cell text-center">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-gray-200">
               {loading ? (
                 Array.from({ length: 8 }).map((_, i) => (
                   <tr key={i} className="animate-pulse border-b border-gray-50">
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-6" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-48" /></td>
-                    <td className="px-6 py-4"><div className="h-6 bg-gray-100 rounded-full w-20" /></td>
-                    <td className="px-6 py-4"><div className="h-6 bg-gray-100 rounded-full w-16" /></td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-6" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-48" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-6 bg-gray-100 rounded-full w-20" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-6 bg-gray-100 rounded-full w-16" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4">
                       <div className="h-3 bg-gray-100 rounded w-56 mb-1.5" />
                       <div className="h-3 bg-gray-100 rounded w-40" />
                     </td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-20" /></td>
-                    <td className="px-6 py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-20" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4"><div className="h-4 bg-gray-100 rounded w-24" /></td>
+                    <td className="px-3 py-2 md:px-6 md:py-4">
                       <div className="flex justify-center gap-2">
                         <div className="w-7 h-7 bg-gray-100 rounded-lg" />
                         <div className="w-7 h-7 bg-gray-100 rounded-lg" />
@@ -313,26 +306,26 @@ export default function KnowledgeLayanan() {
               ) : (
                 paginated.map((entry, idx) => (
                   <tr key={entry.id} className="hover:bg-slate-50/80 transition">
-                    <td className="px-6 py-4 text-gray-500">{(page - 1) * PAGE_SIZE + idx + 1}</td>
-                    <td className="px-6 py-4 text-gray-800 font-medium">{entry.intent}</td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-500">{(page - 1) * PAGE_SIZE + idx + 1}</td>
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-800 font-medium">{entry.intent}</td>
+                    <td className="px-3 py-2 md:px-6 md:py-4">
                       {entry.tipe_pengguna
                         ? <span className={`${tipeColor(entry.tipe_pengguna)} text-xs font-medium px-2.5 py-1 rounded-full`}>{entry.tipe_pengguna}</span>
                         : <span className="text-gray-400">—</span>}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2 md:px-6 md:py-4">
                       <span className={`${tipoLayananColor(entry.tipe_layanan ?? null)} text-xs font-medium px-2.5 py-1 rounded-full`}>
                         {entry.tipe_layanan ?? "LAA"}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-gray-600 max-w-xs">
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-600 max-w-xs">
                       <p className="line-clamp-2">{entry.deskripsi || "—"}</p>
                     </td>
-                    <td className="px-6 py-4 text-gray-600">{entry.platform || "—"}</td>
-                    <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-600">{entry.platform || "—"}</td>
+                    <td className="px-3 py-2 md:px-6 md:py-4 text-gray-500 whitespace-nowrap">
                       {entry.updated_at ? new Date(entry.updated_at).toLocaleDateString("id-ID") : "—"}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-3 py-2 md:px-6 md:py-4">
                       <div className="flex items-center justify-center gap-2">
                         <button onClick={() => { setEditTarget(entry); setModalOpen(true); }}
                           className="p-1.5 rounded-lg text-blue-500 hover:bg-blue-50 transition" title="Edit">
@@ -369,6 +362,7 @@ export default function KnowledgeLayanan() {
           entry={editTarget}
           onClose={() => { setModalOpen(false); setEditTarget(null); }}
           onSave={handleSave}
+          existingEntries={entries}
         />
       )}
 

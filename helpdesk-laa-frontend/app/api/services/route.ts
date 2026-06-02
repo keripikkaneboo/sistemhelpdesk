@@ -7,17 +7,17 @@ export async function GET(request: Request) {
   const role = searchParams.get("role"); // Mengambil role user dari frontend (Mahasiswa/Dosen)
 
   try {
-    let query = "SELECT id, nama_layanan, tipe_pengguna FROM layanan_master";
+    let query = `SELECT MIN(id) AS id, intent AS nama_layanan, tipe_pengguna
+                 FROM knowledge_base
+                 WHERE tipe_layanan = 'LAA'`;
     const params: string[] = [];
 
-    // Jika ada filter role, sesuaikan query-nya (opsional, tapi sangat berguna)
     if (role) {
-      query +=
-        " WHERE LOWER(tipe_pengguna) = LOWER($1) OR LOWER(tipe_pengguna) = 'all' OR LOWER(tipe_pengguna) = 'user'";
+      query += " AND LOWER(tipe_pengguna) = LOWER($1)";
       params.push(role);
     }
 
-    query += " ORDER BY nama_layanan ASC";
+    query += " GROUP BY intent, tipe_pengguna ORDER BY intent ASC";
 
     const result = await pool.query(query, params);
     return NextResponse.json({ status: "success", data: result.rows });
