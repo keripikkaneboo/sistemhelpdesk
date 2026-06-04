@@ -58,17 +58,6 @@ function formatDateLabel(dateKey: string): string {
   return `${String(dy).padStart(2, "0")}/${String(mo).padStart(2, "0")}/${y}`;
 }
 
-const LS_KEY = "helpdesk_ticket_viewed";
-
-function loadViewedAt(): Record<string, string> {
-  if (typeof window === "undefined") return {};
-  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}"); } catch { return {}; }
-}
-
-function saveViewedAt(map: Record<string, string>) {
-  localStorage.setItem(LS_KEY, JSON.stringify(map));
-}
-
 export default function TiketPage() {
   const { userRole } = useUser();
   const { toast, showToast, dismissToast } = useToast();
@@ -81,12 +70,6 @@ export default function TiketPage() {
   const [searchTicket, setSearchTicket] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
-  // Map ticketId → ISO timestamp kapan user terakhir membuka tiket tersebut
-  const [viewedAt, setViewedAt] = useState<Record<string, string>>({});
-
-  useEffect(() => {
-    setViewedAt(loadViewedAt());
-  }, []);
 
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [ticketMessages, setTicketMessages] = useState<TicketMessage[]>([]);
@@ -187,16 +170,6 @@ export default function TiketPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userRole]);
 
-  // Badge muncul jika ada balasan admin DAN tiket diupdate setelah user terakhir membukanya
-  const hasNewAdminReply = (ticket: Ticket): boolean => {
-    if (!ticket.admin_reply_count || ticket.admin_reply_count === 0) return false;
-    const lastViewed = viewedAt[ticket.id];
-    if (!lastViewed) return true; // belum pernah dibuka
-    const updatedAt = ticket.updated_at;
-    if (!updatedAt) return false;
-    return new Date(updatedAt) > new Date(lastViewed);
-  };
-
   useEffect(() => { setPage(1); }, [searchTicket, filterDate, filterStatus]);
 
   useEffect(() => {
@@ -276,10 +249,10 @@ export default function TiketPage() {
   };
 
   const handleViewTicket = async (ticket: Ticket) => {
-    const now = new Date().toISOString();
-    const updated = { ...viewedAt, [ticket.id]: now };
-    setViewedAt(updated);
-    saveViewedAt(updated);
+    // Optimistically clear unread badge saat tiket dibuka
+    setTickets((prev) =>
+      prev.map((t) => t.id === ticket.id ? { ...t, unread_count: 0 } : t)
+    );
 
     setSelectedTicket(ticket);
     setTicketMessages([]);
@@ -465,9 +438,9 @@ export default function TiketPage() {
                           </span>
                         </td>
                         <td className="px-3 py-4 text-center">
-                          {hasNewAdminReply(ticket) && (
+                          {(ticket.unread_count ?? 0) > 0 && (
                             <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none">
-                              {ticket.admin_reply_count}
+                              {(ticket.unread_count ?? 0) > 9 ? "9+" : ticket.unread_count}
                             </span>
                           )}
                         </td>

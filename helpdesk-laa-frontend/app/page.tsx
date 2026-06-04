@@ -207,6 +207,17 @@ export default function LoginPage() {
               </button>
             </div>
           </form>
+
+          <div className="mt-6 pt-5 border-t border-gray-100 text-center">
+            <p className="text-xs text-gray-400 mb-3">Atau akses tanpa login</p>
+            <button
+              type="button"
+              onClick={() => router.push("/guest")}
+              className="w-full py-2.5 border border-gray-300 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-50 hover:border-gray-400 transition"
+            >
+              Lanjutkan sebagai Tamu
+            </button>
+          </div>
         </div>
       </main>
 

@@ -14,7 +14,7 @@ export type Ticket = {
   date: string;
   nama_layanan?: string;
   updated_at?: string | null;
-  admin_reply_count?: number;
+  unread_count?: number;
 };
 
 export type ChatSession = {

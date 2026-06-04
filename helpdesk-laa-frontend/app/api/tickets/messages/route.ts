@@ -42,6 +42,15 @@ export async function GET(request: Request) {
       "SELECT * FROM ticket_messages WHERE ticket_id = $1 ORDER BY created_at ASC",
       [ticketId],
     );
+
+    // Tandai pesan admin sebagai sudah dibaca (fire-and-forget)
+    pool.query(
+      `UPDATE ticket_messages
+       SET is_read = true
+       WHERE ticket_id = $1 AND sender_type = 'admin' AND is_read = false`,
+      [ticketId],
+    ).catch(() => {});
+
     return NextResponse.json({ status: "success", data: result.rows });
   } catch (error) {
     console.error("Error fetching ticket messages:", error);

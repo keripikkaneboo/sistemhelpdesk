@@ -4,6 +4,7 @@ import { rateLimit } from "@/lib/rateLimit";
 
 const loginLimiter = rateLimit({ interval: 15 * 60_000, limit: 10 });
 const resetLimiter = rateLimit({ interval: 60 * 60_000, limit: 5 });
+const guestChatLimiter = rateLimit({ interval: 60 * 60_000, limit: 10 });
 const generalLimiter = rateLimit({ interval: 60_000, limit: 60 });
 
 function getIP(req: NextRequest): string {
@@ -25,15 +26,23 @@ export async function proxy(request: NextRequest) {
       allowed = loginLimiter.check(ip);
     } else if (pathname === "/api/auth/reset-password") {
       allowed = resetLimiter.check(ip);
+    } else if (pathname === "/api/guest/chat-bot") {
+      allowed = guestChatLimiter.check(ip);
     } else {
       allowed = generalLimiter.check(ip);
     }
     if (!allowed) {
+      const isGuestChat = pathname === "/api/guest/chat-bot";
       return NextResponse.json(
-        { status: "error", message: "Terlalu banyak permintaan. Coba lagi sebentar lagi." },
+        {
+          status: "error",
+          message: isGuestChat
+            ? "Batas 10 pesan per jam untuk pengguna tamu telah tercapai. Silakan login untuk pesan tidak terbatas."
+            : "Terlalu banyak permintaan. Coba lagi sebentar lagi.",
+        },
         {
           status: 429,
-          headers: pathname === "/api/auth/login" ? { "Retry-After": "900" } : {},
+          headers: pathname === "/api/auth/login" ? { "Retry-After": "900" } : isGuestChat ? { "Retry-After": "3600" } : {},
         },
       );
     }

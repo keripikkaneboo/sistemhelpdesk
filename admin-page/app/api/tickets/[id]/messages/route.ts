@@ -73,8 +73,8 @@ export async function POST(
 
     // INSERT pesan (query kritis)
     const result = await pool.query(
-      `INSERT INTO ticket_messages (ticket_id, sender_type, sender_name, message)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO ticket_messages (ticket_id, sender_type, sender_name, message, is_read)
+       VALUES ($1, $2, $3, $4, false)
        RETURNING id, ticket_id, sender_type, sender_name, message, created_at`,
       [id, type, name, message.trim()]
     );

@@ -21,7 +21,8 @@ export async function GET() {
             FROM ticket_messages
             WHERE ticket_id = t.id
               AND sender_type = 'admin'
-          ), 0) AS admin_reply_count
+              AND is_read = false
+          ), 0) AS unread_count
        FROM tickets t
        LEFT JOIN layanan_master l ON t.layanan_id = l.id
        WHERE t.nim = $1
