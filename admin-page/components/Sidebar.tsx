@@ -103,7 +103,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   };
 
   return (
-    <aside className={`w-60 min-h-screen sidebar-gradient flex flex-col shadow-[4px_0_16px_rgba(0,0,0,0.18)] fixed md:relative inset-y-0 left-0 z-40 sidebar-drawer${isOpen ? " sidebar-drawer-open" : ""}`}>
+    <aside className={`w-60 h-dvh md:min-h-screen sidebar-gradient flex flex-col shadow-[4px_0_16px_rgba(0,0,0,0.18)] fixed md:relative inset-y-0 left-0 z-40 sidebar-drawer${isOpen ? " sidebar-drawer-open" : ""}`}>
 
       {/* Brand — horizontal layout (Design A) */}
       <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10 shrink-0">
