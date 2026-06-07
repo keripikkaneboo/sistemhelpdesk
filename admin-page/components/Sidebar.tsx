@@ -106,7 +106,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     <aside className={`w-60 min-h-screen sidebar-gradient flex flex-col shadow-[4px_0_16px_rgba(0,0,0,0.18)] fixed md:relative inset-y-0 left-0 z-40 sidebar-drawer${isOpen ? " sidebar-drawer-open" : ""}`}>
 
       {/* Brand — horizontal layout (Design A) */}
-      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10">
+      <div className="flex items-center gap-3 px-5 py-5 border-b border-white/10 shrink-0">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shrink-0 shadow-[0_4px_12px_rgba(220,38,38,0.4)] text-white font-bold text-sm select-none">
           {initials}
         </div>
@@ -127,7 +127,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex flex-col gap-0.5 px-3 py-4 flex-1">
+      <nav className="flex flex-col gap-0.5 px-3 py-4 flex-1 min-h-0 overflow-y-auto sidebar-scroll">
         <p className="px-3 pt-1 pb-2 text-[9px] font-bold uppercase tracking-[0.13em] text-white/25 select-none">
           Menu
         </p>
@@ -228,7 +228,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </nav>
 
       {/* Footer — Akun */}
-      <div className="px-3 py-4 border-t border-white/10 flex flex-col gap-0.5">
+      <div className="px-3 py-4 border-t border-white/10 flex flex-col gap-0.5 shrink-0">
         <p className="px-3 pb-2 text-[9px] font-bold uppercase tracking-[0.13em] text-white/25 select-none">
           Akun
         </p>
