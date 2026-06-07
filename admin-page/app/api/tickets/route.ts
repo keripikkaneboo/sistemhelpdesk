@@ -10,7 +10,7 @@ export async function GET() {
     const result = await pool.query(
       `SELECT
          t.id, t.nim, t.nama, t.subject, t.description, t.status, t.date,
-         t.created_at, t.updated_at, t.handled_by, t.layanan_id,
+         t.created_at, t.updated_at, t.handled_by, ua.nama AS handled_by_name, t.layanan_id,
          lm.nama_layanan,
          COALESCE((
            SELECT COUNT(*)::int
@@ -31,9 +31,8 @@ export async function GET() {
          AS unread_count
        FROM tickets t
        LEFT JOIN layanan_master lm ON lm.id = t.layanan_id
-       WHERE t.handled_by IS NULL OR t.handled_by = $1
-       ORDER BY COALESCE(t.updated_at, t.created_at) DESC`,
-      [session.nama]
+       LEFT JOIN user_admin ua ON ua.id::text = t.handled_by
+       ORDER BY COALESCE(t.updated_at, t.created_at) DESC`
     );
     return NextResponse.json(result.rows);
   } catch {
@@ -41,12 +40,12 @@ export async function GET() {
       const result = await pool.query(
         `SELECT t.id, t.nim, t.nama, t.subject, t.description, t.status, t.date,
                 t.created_at, t.layanan_id, lm.nama_layanan,
+                t.handled_by, ua.nama AS handled_by_name,
                 CASE WHEN LOWER(t.status) = 'open' THEN 1 ELSE 0 END AS unread_count
          FROM tickets t
          LEFT JOIN layanan_master lm ON lm.id = t.layanan_id
-         WHERE t.handled_by IS NULL OR t.handled_by = $1
-         ORDER BY t.created_at DESC`,
-        [session.nama]
+         LEFT JOIN user_admin ua ON ua.id::text = t.handled_by
+         ORDER BY t.created_at DESC`
       );
       return NextResponse.json(result.rows);
     } catch (err) {

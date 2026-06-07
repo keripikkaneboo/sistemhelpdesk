@@ -20,9 +20,6 @@ export async function GET(
     }
 
     const currentHandler = await getHandledBy(id);
-    if (currentHandler && currentHandler !== session.nama) {
-      return NextResponse.json({ error: "Akses ditolak" }, { status: 403 });
-    }
 
     const result = await pool.query(
       `SELECT id, ticket_id, sender_type, sender_name, message, created_at
@@ -32,13 +29,18 @@ export async function GET(
       [id]
     );
 
-    // Tandai pesan user sebagai sudah dibaca
-    pool.query(
-      `UPDATE ticket_messages
-       SET is_read = true
-       WHERE ticket_id = $1 AND sender_type = 'user' AND is_read = false`,
-      [id]
-    ).catch(() => {});
+    // Tandai pesan user sebagai sudah dibaca — hanya jika viewer adalah admin
+    // penanggung jawab (atau tiket belum ditangani siapa pun), agar admin lain
+    // yang membuka tiket dalam mode lihat-saja tidak menghapus badge unread
+    // milik admin yang sebenarnya menangani.
+    if (!currentHandler || currentHandler === String(session.id)) {
+      pool.query(
+        `UPDATE ticket_messages
+         SET is_read = true
+         WHERE ticket_id = $1 AND sender_type = 'user' AND is_read = false`,
+        [id]
+      ).catch(() => {});
+    }
 
     return NextResponse.json(result.rows);
   } catch (err) {
@@ -59,7 +61,7 @@ export async function POST(
     }
 
     const currentHandler = await getHandledBy(id);
-    if (currentHandler && currentHandler !== session.nama) {
+    if (currentHandler && currentHandler !== String(session.id)) {
       return NextResponse.json({ error: "Tiket ini sedang ditangani oleh admin lain" }, { status: 403 });
     }
 
@@ -70,6 +72,7 @@ export async function POST(
 
     const type: "admin" | "user" = sender_type === "user" ? "user" : "admin";
     const name = sender_name ?? (type === "admin" ? "Admin" : "User");
+    const adminId = String(session.id);
 
     // INSERT pesan (query kritis)
     const result = await pool.query(
@@ -90,7 +93,7 @@ export async function POST(
              status      = CASE WHEN LOWER(status) = 'open' THEN 'In Progress' ELSE status END
          WHERE id = $1
          RETURNING status, handled_by`,
-        [id, name]
+        [id, adminId]
       );
       if ((updateResult.rowCount ?? 0) > 0) {
         const row = updateResult.rows[0];

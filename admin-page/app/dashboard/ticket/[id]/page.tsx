@@ -14,6 +14,7 @@ type Ticket = {
   date: string;
   created_at: string;
   handled_by?: string | null;
+  handled_by_name?: string | null;
   has_new_message?: boolean;
 };
 
@@ -115,16 +116,20 @@ export default function TicketDetailPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
   const [adminName, setAdminName] = useState("Admin");
+  const [adminId, setAdminId] = useState("");
   const [adminLoaded, setAdminLoaded] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Get current admin name
+  // Get current admin identity
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((d) => { if (d.nama) setAdminName(d.nama); })
+      .then((d) => {
+        if (d.nama) setAdminName(d.nama);
+        if (d.id != null) setAdminId(String(d.id));
+      })
       .catch(() => {})
       .finally(() => setAdminLoaded(true));
   }, []);
@@ -293,7 +298,7 @@ export default function TicketDetailPage() {
       const res = await fetch(`/api/tickets/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus, handled_by: adminName }),
+        body: JSON.stringify({ status: newStatus, handled_by: adminId }),
       });
       if (!res.ok) throw new Error();
       const updated: Ticket = await res.json();
@@ -353,50 +358,8 @@ export default function TicketDetailPage() {
     );
   }
 
-  if (ticket.handled_by && ticket.handled_by !== adminName) {
-    return (
-      <div className="flex flex-col h-[calc(100dvh-52px)] md:h-screen overflow-hidden bg-white">
-        <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-100 shrink-0">
-          <button
-            onClick={() => router.push("/dashboard/ticket")}
-            className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 transition shrink-0"
-            title="Kembali ke daftar tiket"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <Avatar name={ticket.nama} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-800 truncate">{ticket.nama}</p>
-            <p className="text-xs text-gray-400 font-mono">{ticket.nim || "—"}</p>
-          </div>
-        </div>
-        <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6">
-          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-          </div>
-          <div className="text-center">
-            <p className="text-sm font-semibold text-gray-800 mb-1">Akses Ditolak</p>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Tiket ini sedang ditangani oleh{" "}
-              <span className="font-medium text-gray-700">{ticket.handled_by}</span>.
-              <br />
-              Anda tidak memiliki akses untuk melihat tiket ini.
-            </p>
-          </div>
-          <button
-            onClick={() => router.push("/dashboard/ticket")}
-            className="mt-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-900 text-sm font-medium text-white transition"
-          >
-            Kembali ke Daftar Tiket
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const isReadOnly = !!(ticket.handled_by && ticket.handled_by !== adminId);
+  const otherHandlerName = ticket.handled_by_name ?? ticket.handled_by;
 
   return (
     <div className="flex flex-col h-[calc(100dvh-52px)] md:h-screen overflow-hidden bg-white">
@@ -422,7 +385,7 @@ export default function TicketDetailPage() {
           <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${statusStyle(currentStatus)}`}>
             {statusLabel(currentStatus)}
           </span>
-          {currentStatus.toLowerCase() !== "closed" && (
+          {!isReadOnly && currentStatus.toLowerCase() !== "closed" && (
             <button
               onClick={() => setShowCloseConfirm(true)}
               disabled={updatingStatus}
@@ -445,6 +408,19 @@ export default function TicketDetailPage() {
         <span className="text-xs text-gray-500 font-medium truncate">{ticket.subject}</span>
         <span className="text-xs text-gray-400 ml-auto shrink-0">#{ticket.id}</span>
       </div>
+
+      {/* ── Notice: ditangani admin lain (read-only) ── */}
+      {isReadOnly && (
+        <div className="px-5 py-2.5 bg-amber-50 border-b border-amber-100 flex items-center gap-2 shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-amber-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+          <span className="text-xs text-amber-700">
+            Tiket ini sedang ditangani oleh{" "}
+            <span className="font-semibold">{otherHandlerName}</span>. Anda hanya dapat melihat percakapan (mode lihat saja).
+          </span>
+        </div>
+      )}
 
       {/* ── Messages — identik ── */}
       <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-3">
@@ -520,7 +496,16 @@ export default function TicketDetailPage() {
 
       {/* ── Input ── */}
       <div className="border-t border-gray-100 shrink-0">
-        {currentStatus.toLowerCase() === "closed" ? (
+        {isReadOnly ? (
+          <div className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gray-50">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <p className="text-xs text-gray-400">
+              Tiket ini ditangani oleh <span className="font-medium text-gray-500">{otherHandlerName}</span>. Anda tidak dapat mengirim balasan.
+            </p>
+          </div>
+        ) : currentStatus.toLowerCase() === "closed" ? (
           <div className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gray-50">
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />

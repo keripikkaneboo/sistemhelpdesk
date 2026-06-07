@@ -17,6 +17,7 @@ type Ticket = {
   created_at: string;
   updated_at?: string | null;
   handled_by?: string | null;
+  handled_by_name?: string | null;
   layanan_id?: string | null;
   nama_layanan?: string | null;
   unread_count?: number;
@@ -139,7 +140,7 @@ export default function TicketPage() {
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((d) => { if (d.nama) setCurrentAdmin(d.nama); })
+      .then((d) => { if (d.id != null) setCurrentAdmin(String(d.id)); })
       .catch(() => {});
 
     const cached = getCache<Ticket>(CACHE_KEY);
@@ -179,7 +180,13 @@ export default function TicketPage() {
   const doneCount       = tickets.filter((t) => t.status?.toLowerCase() === "closed").length;
 
   const statusOptions   = [...new Set(tickets.map((t) => t.status).filter(Boolean))];
-  const adminOptions    = [...new Set(tickets.map((t) => t.handled_by).filter((v): v is string => Boolean(v)))];
+  const adminOptions    = Array.from(
+    new Map(
+      tickets
+        .filter((t): t is Ticket & { handled_by: string } => Boolean(t.handled_by))
+        .map((t) => [t.handled_by, t.handled_by_name ?? t.handled_by] as const)
+    ).entries()
+  ).map(([id, name]) => ({ id, name }));
 
   const filtered = tickets.filter((t) => {
     const q = search.toLowerCase();
@@ -405,7 +412,7 @@ export default function TicketPage() {
                     <CustomSelect
                       value={filterHandledBy}
                       onChange={(v) => { setFilterHandledBy(v); resetPage(); }}
-                      options={[{ value: "", label: "Semua Admin" }, ...adminOptions.map((a) => ({ value: a, label: a === currentAdmin ? `${a} (Me)` : a }))]}
+                      options={[{ value: "", label: "Semua Admin" }, ...adminOptions.map((a) => ({ value: a.id, label: a.id === currentAdmin ? `${a.name} (Me)` : a.name }))]}
                     />
                   </div>
 
@@ -585,7 +592,7 @@ export default function TicketPage() {
                       <td className="px-3 py-2 md:px-3 md:py-3">
                         {ticket.handled_by ? (
                           <span className={`text-xs font-medium ${ticket.handled_by === currentAdmin ? "text-red-600" : "text-gray-600"}`}>
-                            {ticket.handled_by === currentAdmin ? "Me" : ticket.handled_by}
+                            {ticket.handled_by === currentAdmin ? "Me" : (ticket.handled_by_name ?? ticket.handled_by)}
                           </span>
                         ) : (
                           <span className="text-gray-300 text-xs">—</span>

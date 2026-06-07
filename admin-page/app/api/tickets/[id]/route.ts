@@ -12,8 +12,11 @@ export async function GET(
   const { id } = await params;
   try {
     const result = await pool.query(
-      `SELECT id, nim, nama, subject, description, status, date, created_at, handled_by
-       FROM tickets WHERE id = $1`,
+      `SELECT t.id, t.nim, t.nama, t.subject, t.description, t.status, t.date, t.created_at,
+              t.handled_by, ua.nama AS handled_by_name
+       FROM tickets t
+       LEFT JOIN user_admin ua ON ua.id::text = t.handled_by
+       WHERE t.id = $1`,
       [id]
     );
     if (result.rowCount === 0) {
@@ -42,7 +45,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Tiket tidak ditemukan" }, { status: 404 });
     }
     const currentHandler = check.rows[0].handled_by;
-    if (currentHandler && currentHandler !== session.nama) {
+    const adminId = String(session.id);
+    if (currentHandler && currentHandler !== adminId) {
       return NextResponse.json({ error: "Tiket ini sedang ditangani oleh admin lain" }, { status: 403 });
     }
 
@@ -64,7 +68,7 @@ export async function PATCH(
          ${setHandledBy ? ", handled_by = $3" : ""}
        WHERE id = $2
        RETURNING id, nim, nama, subject, description, status, date, created_at, handled_by`,
-      setHandledBy ? [dbStatus, id, handled_by] : [dbStatus, id]
+      setHandledBy ? [dbStatus, id, adminId] : [dbStatus, id]
     );
     if (result.rowCount === 0) {
       return NextResponse.json({ error: "Tiket tidak ditemukan" }, { status: 404 });

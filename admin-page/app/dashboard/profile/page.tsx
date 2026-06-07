@@ -5,6 +5,11 @@ import Image from "next/image";
 
 export default function ProfilePage() {
   const [profile, setProfile] = useState({ name: "", nip: "" });
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({ name: "", nip: "" });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileSaved, setProfileSaved] = useState(false);
+  const [profileError, setProfileError] = useState("");
   const [passwords, setPasswords] = useState({ new: "", confirm: "" });
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -21,6 +26,42 @@ export default function ProfilePage() {
       })
       .catch(() => {});
   }, []);
+
+  const startEditingProfile = () => {
+    setProfileForm({ name: profile.name, nip: profile.nip });
+    setProfileError("");
+    setEditingProfile(true);
+  };
+
+  const handleProfileSave = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setProfileError("");
+    if (!profileForm.name.trim() || !profileForm.nip.trim()) {
+      setProfileError("Nama dan NIP wajib diisi.");
+      return;
+    }
+    setProfileSaving(true);
+    try {
+      const res = await fetch("/api/auth/update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nama: profileForm.name.trim(), nip: profileForm.nip.trim() }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        setProfileError(json.error || "Gagal memperbarui profil.");
+        return;
+      }
+      setProfile({ name: json.data.nama, nip: json.data.nip });
+      setEditingProfile(false);
+      setProfileSaved(true);
+      setTimeout(() => setProfileSaved(false), 3000);
+    } catch {
+      setProfileError("Tidak dapat terhubung ke server.");
+    } finally {
+      setProfileSaving(false);
+    }
+  };
 
   const handlePasswordSave = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -90,26 +131,89 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Informasi Akun — read only */}
+        {/* Informasi Akun */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" />
-            <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">Informasi Akun</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-1 h-5 bg-red-600 rounded-full shrink-0" />
+              <h2 className="text-sm font-semibold text-gray-800 uppercase tracking-wide">Informasi Akun</h2>
+            </div>
+            {!editingProfile && (
+              <button
+                onClick={startEditingProfile}
+                className="text-red-600 text-sm font-bold hover:underline shrink-0"
+              >
+                Ubah
+              </button>
+            )}
           </div>
-          <div className="divide-y divide-gray-100">
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-gray-500 font-medium">Nama</span>
-              <span className="text-sm font-semibold text-gray-800">{profile.name || "..."}</span>
+
+          {editingProfile ? (
+            <form onSubmit={handleProfileSave} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">Nama</label>
+                <input
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Nama lengkap..."
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 placeholder-gray-400 outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition w-full"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-gray-700">NIP</label>
+                <input
+                  type="text"
+                  value={profileForm.nip}
+                  onChange={(e) => setProfileForm((p) => ({ ...p, nip: e.target.value }))}
+                  placeholder="NIP..."
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-700 font-mono placeholder-gray-400 outline-none focus:ring-2 focus:ring-red-300 focus:border-red-400 transition w-full"
+                />
+              </div>
+
+              {profileError && <p className="text-red-500 text-sm">{profileError}</p>}
+
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setEditingProfile(false); setProfileError(""); }}
+                  className="px-5 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={profileSaving}
+                  className="px-5 py-2 bg-gradient-to-b from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-sm font-medium rounded-lg transition-all shadow-sm shadow-red-600/25 disabled:opacity-60"
+                >
+                  {profileSaving ? "Menyimpan..." : "Simpan"}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              <div className="flex items-center justify-between py-3">
+                <span className="text-sm text-gray-500 font-medium">Nama</span>
+                <span className="text-sm font-semibold text-gray-800">{profile.name || "..."}</span>
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <span className="text-sm text-gray-500 font-medium">NIP</span>
+                <span className="text-sm font-semibold text-gray-800 font-mono">{profile.nip || "..."}</span>
+              </div>
+              <div className="flex items-center justify-between py-3">
+                <span className="text-sm text-gray-500 font-medium">Role</span>
+                <span className="bg-red-100 text-red-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">Administrator</span>
+              </div>
+              {profileSaved && (
+                <p className="text-green-600 text-sm flex items-center gap-2 pt-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  Profil berhasil diperbarui
+                </p>
+              )}
             </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-gray-500 font-medium">NIP</span>
-              <span className="text-sm font-semibold text-gray-800 font-mono">{profile.nip || "..."}</span>
-            </div>
-            <div className="flex items-center justify-between py-3">
-              <span className="text-sm text-gray-500 font-medium">Role</span>
-              <span className="bg-red-100 text-red-600 text-xs font-semibold px-2.5 py-0.5 rounded-full">Administrator</span>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Change password */}
