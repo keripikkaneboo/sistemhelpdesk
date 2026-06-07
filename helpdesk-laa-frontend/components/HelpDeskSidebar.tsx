@@ -5,6 +5,8 @@ import { usePathname, useSearchParams, useRouter } from "next/navigation";
 import { useUser } from "@/lib/UserContext";
 import type { ChatSession } from "@/lib/types";
 import { getCache, setCache, invalidateCache, clearAllCache } from "@/lib/dataCache";
+import { useToast } from "@/lib/useToast";
+import ToastNotification from "@/components/ToastNotification";
 
 interface Props {
   isOpen: boolean;
@@ -19,6 +21,8 @@ export default function HelpDeskSidebar({ isOpen, onClose }: Props) {
 
   const [chatSessions, setChatSessions] = useState<ChatSession[]>(() => getCache<ChatSession>("chat_sessions") ?? []);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ChatSession | null>(null);
+  const { toast, showToast, dismissToast } = useToast();
 
   const currentSessionId = searchParams.get("session") ?? "";
 
@@ -60,9 +64,10 @@ export default function HelpDeskSidebar({ isOpen, onClose }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, searchParams]);
 
-  const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!confirm("Yakin ingin menghapus riwayat percakapan ini?")) return;
+  const handleConfirmDeleteSession = async () => {
+    if (!deleteTarget) return;
+    const sessionId = deleteTarget.sessionId;
+    setDeleteTarget(null);
     try {
       const res = await fetch(`/api/chat?sessionId=${sessionId}`, { method: "DELETE" });
       const result = await res.json();
@@ -70,11 +75,12 @@ export default function HelpDeskSidebar({ isOpen, onClose }: Props) {
         invalidateCache("chat_sessions");
         setChatSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
         if (currentSessionId === sessionId) router.push("/dashboard/chat");
+        showToast("success", "Riwayat percakapan berhasil dihapus.");
       } else {
-        alert(result.message);
+        showToast("error", result.message ?? "Gagal menghapus percakapan.");
       }
     } catch {
-      alert("Gagal menghapus percakapan.");
+      showToast("error", "Gagal menghapus percakapan.");
     }
   };
 
@@ -218,7 +224,7 @@ export default function HelpDeskSidebar({ isOpen, onClose }: Props) {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setOpenDropdownId(null);
-                                handleDeleteSession(session.sessionId, e);
+                                setDeleteTarget(session);
                               }}
                               className="w-full text-left px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2 transition"
                             >
@@ -245,6 +251,34 @@ export default function HelpDeskSidebar({ isOpen, onClose }: Props) {
           <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-widest">Telkom University</p>
         </div>
       </div>
+
+      {/* Konfirmasi Hapus Riwayat Chat */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6">
+            <h2 className="text-base font-semibold text-gray-800 mb-2">Hapus Riwayat Percakapan?</h2>
+            <p className="text-sm text-gray-500 mb-5">
+              Percakapan <strong>&quot;{deleteTarget.title}&quot;</strong> akan dihapus secara permanen dan tidak dapat dikembalikan.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleConfirmDeleteSession}
+                className="px-4 py-2 text-sm font-medium bg-red-600 hover:bg-red-700 text-white rounded-lg transition"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ToastNotification toast={toast} onDismiss={dismissToast} />
     </aside>
   );
 }
