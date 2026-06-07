@@ -7,6 +7,14 @@ import { useToast } from "@/lib/useToast";
 import ToastNotification from "@/components/ToastNotification";
 import { getCache, setCache, invalidateCache } from "@/lib/dataCache";
 import Pagination from "@/components/Pagination";
+import CustomSelect from "@/components/CustomSelect";
+
+const STATUS_FILTER_OPTIONS = [
+  { value: "All", label: "Semua Status" },
+  { value: "Open", label: "Open" },
+  { value: "In Progress", label: "In Progress" },
+  { value: "Closed", label: "Closed" },
+];
 
 type TicketMessage = {
   id: number;
@@ -128,11 +136,11 @@ export default function TiketPage() {
   };
 
   const fetchServices = async () => {
-    const key = `services_${userRole}`;
+    const key = `layanan_master_${userRole}`;
     const cached = getCache<Service>(key);
     if (cached) { setServices(cached); return; }
     try {
-      const res = await fetch(`/api/services?role=${userRole}`);
+      const res = await fetch(`/api/layanan-master?role=${userRole}`);
       const result = await res.json();
       if (result.status === "success") {
         setServices(result.data);
@@ -342,22 +350,12 @@ export default function TiketPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition"
               />
             </div>
-            <div className="w-full md:w-40 relative">
-              <select
+            <div className="w-full md:w-40">
+              <CustomSelect
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition text-gray-600 bg-white appearance-none cursor-pointer"
-              >
-                <option value="All">Semua Status</option>
-                <option value="Open">Open</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Closed">Closed</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
+                onChange={setFilterStatus}
+                options={STATUS_FILTER_OPTIONS}
+              />
             </div>
             <div className="w-full md:w-auto">
               <input
@@ -475,17 +473,12 @@ export default function TiketPage() {
             <form onSubmit={handleSubmitTicket} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Kategori Layanan <span className="text-red-500">*</span></label>
-                <select
-                  required
+                <CustomSelect
                   value={selectedService}
-                  onChange={(e) => setSelectedService(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-red-500 outline-none text-sm bg-white cursor-pointer text-gray-700"
-                >
-                  <option value="">-- Pilih Layanan --</option>
-                  {services.map((svc) => (
-                    <option key={svc.id} value={svc.id}>{svc.nama_layanan}</option>
-                  ))}
-                </select>
+                  onChange={setSelectedService}
+                  placeholder="-- Pilih Layanan --"
+                  options={services.map((svc) => ({ value: String(svc.id), label: svc.nama_layanan }))}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subjek / Judul <span className="text-red-500">*</span></label>
