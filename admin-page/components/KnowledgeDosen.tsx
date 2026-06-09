@@ -119,12 +119,6 @@ export default function KnowledgeDosen() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-6 py-2 bg-blue-50 border-b border-blue-100 text-xs text-blue-600">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12A9 9 0 113 12a9 9 0 0118 0z" />
-          </svg>
-          Data dosen yang ditambahkan atau diedit akan otomatis di-embed oleh layanan auto_embedding dalam ±10 detik.
-        </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-xs md:text-sm">
