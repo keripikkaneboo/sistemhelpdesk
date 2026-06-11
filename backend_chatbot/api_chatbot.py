@@ -177,9 +177,19 @@ def fetch_dynamic_context(query_text, query_embedding, table_name, top_k=2, extr
         query_sql = f"""
             WITH ranked_data AS (
                 SELECT {columns_str}, RANK() OVER (ORDER BY {VECTOR_COLUMN_NAME} <=> %s::vector ASC) AS vector_rank, ({score_clause}) AS kw_score, RANK() OVER (ORDER BY ({score_clause}) DESC) AS raw_kw_rank FROM {table_name} AS t WHERE 1=1 {extra_filter}
+            ),
+            scored AS (
+                SELECT *, ((1.0 / (60 + vector_rank)) + (3.0 / (60 + CASE WHEN kw_score = 0 THEN 1000 ELSE raw_kw_rank END))) AS final_score FROM ranked_data
+            ),
+            top_results AS (
+                SELECT {columns_str} FROM scored ORDER BY final_score DESC, vector_rank ASC LIMIT %s
+            ),
+            best_keyword AS (
+                SELECT {columns_str} FROM scored WHERE raw_kw_rank = 1 AND kw_score > 0 LIMIT 1
             )
-            SELECT {columns_str} FROM ranked_data
-            ORDER BY ((1.0 / (60 + vector_rank)) + (3.0 / (60 + CASE WHEN kw_score = 0 THEN 1000 ELSE raw_kw_rank END))) DESC, vector_rank ASC LIMIT %s;
+            SELECT * FROM top_results
+            UNION
+            SELECT * FROM best_keyword;
         """
         cur.execute(query_sql, final_params)
         return "\n".join([str(dict(zip(columns, row))) for row in cur.fetchall()])
