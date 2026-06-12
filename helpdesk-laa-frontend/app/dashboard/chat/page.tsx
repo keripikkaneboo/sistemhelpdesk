@@ -41,10 +41,8 @@ const autoLinkify = (text: string) =>
     })
     .join("");
 
-const shuffleAndFilter = (data: Service[]): Service[] =>
-  data
-    .filter((s) => s.nama_layanan !== "Informasi Dosen")
-    .sort(() => Math.random() - 0.5);
+const filterServices = (data: Service[]): Service[] =>
+  data.filter((s) => s.nama_layanan !== "Informasi Dosen");
 
 const WELCOME_MESSAGE: Message = {
   id: "welcome",
@@ -79,9 +77,9 @@ function ChatPageContent() {
       .then((r) => (r.ok ? r.json() : null))
       .then((result) => {
         if (result?.status === "success") {
-          const shuffled = shuffleAndFilter(result.data);
-          setServiceChips(shuffled);
-          setCache(key, shuffled);
+          const filtered = filterServices(result.data);
+          setServiceChips(filtered);
+          setCache(key, filtered);
         }
       })
       .catch(() => {});
@@ -97,9 +95,9 @@ function ChatPageContent() {
       .then((r) => (r.ok ? r.json() : null))
       .then((result) => {
         if (result?.status === 'success') {
-          const shuffled = shuffleAndFilter(result.data);
-          setMhsServiceChips(shuffled);
-          setCache(key, shuffled);
+          const filtered = filterServices(result.data);
+          setMhsServiceChips(filtered);
+          setCache(key, filtered);
         }
       })
       .catch(() => {});
@@ -299,10 +297,10 @@ function ChatPageContent() {
                         <p className="text-xs font-semibold text-gray-400">📚 Layanan Tersedia</p>
                       </div>
                     )}
-                    <div className="p-3 flex flex-wrap gap-2">
+                    <div className="p-3 flex flex-wrap gap-2 max-h-56 overflow-y-auto">
                       {(activeServiceTab === 'mhs' && userRole?.toLowerCase() === 'dosen'
                         ? mhsServiceChips : serviceChips
-                      ).slice(0, 5).map((svc) => (
+                      ).map((svc) => (
                         <button key={svc.id}
                           onClick={() => setInput(`Saya ingin bertanya tentang ${svc.nama_layanan}`)}
                           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium border border-red-100 bg-red-50/70 text-red-700 hover:bg-red-100 hover:border-red-200 transition"
