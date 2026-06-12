@@ -25,6 +25,7 @@ export async function GET() {
                  SELECT 1 FROM ticket_messages
                  WHERE ticket_id = t.id AND sender_type = 'user'
                )
+               AND t.is_read = false
              THEN 1
              ELSE 0
            END
@@ -41,7 +42,7 @@ export async function GET() {
         `SELECT t.id, t.nim, t.nama, t.subject, t.description, t.status, t.date,
                 t.created_at, t.layanan_id, lm.nama_layanan,
                 t.handled_by, ua.nama AS handled_by_name,
-                CASE WHEN LOWER(t.status) = 'open' THEN 1 ELSE 0 END AS unread_count
+                CASE WHEN LOWER(t.status) = 'open' AND t.is_read = false THEN 1 ELSE 0 END AS unread_count
          FROM tickets t
          LEFT JOIN layanan_master lm ON lm.id = t.layanan_id
          LEFT JOIN user_admin ua ON ua.id::text = t.handled_by

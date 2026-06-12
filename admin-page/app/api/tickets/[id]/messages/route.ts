@@ -34,12 +34,18 @@ export async function GET(
     // yang membuka tiket dalam mode lihat-saja tidak menghapus badge unread
     // milik admin yang sebenarnya menangani.
     if (!currentHandler || currentHandler === String(session.id)) {
-      pool.query(
-        `UPDATE ticket_messages
-         SET is_read = true
-         WHERE ticket_id = $1 AND sender_type = 'user' AND is_read = false`,
-        [id]
-      ).catch(() => {});
+      await Promise.all([
+        pool.query(
+          `UPDATE ticket_messages
+           SET is_read = true
+           WHERE ticket_id = $1 AND sender_type = 'user' AND is_read = false`,
+          [id]
+        ),
+        pool.query(
+          `UPDATE tickets SET is_read = true WHERE id = $1 AND is_read = false`,
+          [id]
+        ),
+      ]).catch(() => {});
     }
 
     return NextResponse.json(result.rows);

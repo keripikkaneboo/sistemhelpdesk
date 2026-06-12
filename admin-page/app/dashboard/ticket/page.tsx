@@ -62,17 +62,28 @@ function formatDate(val: string) {
   });
 }
 
+// PostgreSQL mengembalikan TIMESTAMPTZ tanpa suffix timezone (misal "2026-05-10 08:31:00"),
+// sehingga new Date() menginterpretasikannya sebagai waktu lokal, bukan UTC.
+// Fungsi ini memastikan string selalu diparse sebagai UTC.
+function parseAsUTC(val: string): Date {
+  if (!val) return new Date(NaN);
+  const hasTimezone = val.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(val);
+  if (hasTimezone) return new Date(val);
+  return new Date(val.replace(" ", "T") + "Z");
+}
+
 function calcAgeHours(created: string, endDate?: string | null): number {
-  const end = endDate ? new Date(endDate).getTime() : Date.now();
-  return (end - new Date(created).getTime()) / 3600000;
+  const end = endDate ? parseAsUTC(endDate).getTime() : Date.now();
+  return (end - parseAsUTC(created).getTime()) / 3600000;
 }
 
 function formatAge(created: string, endDate?: string | null): string {
   if (!created) return "—";
   const diffHours = Math.floor(calcAgeHours(created, endDate));
-  if (diffHours < 1) return "< 1 jam";
-  if (diffHours < 24) return `${diffHours} jam`;
-  return `${Math.floor(diffHours / 24)} hari`;
+  const suffix = endDate ? "" : " yang lalu";
+  if (diffHours < 1) return `< 1 jam${suffix}`;
+  if (diffHours < 24) return `${diffHours} jam${suffix}`;
+  return `${Math.floor(diffHours / 24)} hari${suffix}`;
 }
 
 function ageStyle(created: string, endDate?: string | null): string {

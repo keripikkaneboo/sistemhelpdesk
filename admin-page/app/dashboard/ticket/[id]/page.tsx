@@ -17,6 +17,7 @@ type Ticket = {
   handled_by?: string | null;
   handled_by_name?: string | null;
   has_new_message?: boolean;
+  unread_count?: number;
 };
 
 type Message = {
@@ -158,9 +159,12 @@ export default function TicketDetailPage() {
         // Setelah admin baca → reset unread_count di cache daftar tiket
         const ticketCache = getCache<Ticket>("tickets");
         if (ticketCache) {
-          setCache("tickets", ticketCache.map((t) =>
+          const updated = ticketCache.map((t) =>
             t.id === id ? { ...t, unread_count: 0 } : t
-          ));
+          );
+          setCache("tickets", updated);
+          const total = updated.reduce((sum, t) => sum + (t.unread_count ?? 0), 0);
+          window.dispatchEvent(new CustomEvent("tickets-unread-updated", { detail: { total } }));
         }
       })
       .catch(() => {})
