@@ -209,7 +209,7 @@ export default function TicketPage() {
     const matchHandledBy   = filterHandledBy   ? t.handled_by === filterHandledBy  : true;
     const matchMe          = filterMe          ? t.handled_by === currentAdmin      : true;
     const matchUnread      = filterUnread      ? (t.unread_count ?? 0) > 0         : true;
-    const matchAgeFilter   = matchAge(ticketDate, filterAge);
+    const matchAgeFilter   = matchAge(t.created_at, filterAge);
 
     const matchDateFrom = dateFrom
       ? new Date(ticketDate) >= new Date(dateFrom)
@@ -583,10 +583,10 @@ export default function TicketPage() {
                         {(() => {
                           const isClosed = ticket.status?.toLowerCase() === "closed";
                           const endDate = isClosed ? ticket.updated_at : null;
-                          const style = isClosed ? "bg-gray-100 text-gray-500" : ageStyle(ticketDate, endDate);
+                          const style = isClosed ? "bg-gray-100 text-gray-500" : ageStyle(ticket.created_at, endDate);
                           return (
                             <span className={`text-xs font-medium px-2 py-0.5 rounded-md ${style}`}>
-                              {formatAge(ticketDate, endDate)}
+                              {formatAge(ticket.created_at, endDate)}
                             </span>
                           );
                         })()}
