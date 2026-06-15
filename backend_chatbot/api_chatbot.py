@@ -104,7 +104,7 @@ try:
     intent_model = AutoModelForSequenceClassification.from_pretrained(".")
     with open("label_mapping.json", "r") as f:
         label_mapping = json.load(f)
-        id2label = {v: k for k, v in label_mapping.items()}
+        id2label = {int(k): v for k, v in label_mapping.items()}
 except Exception as e:
     print(f"Warning: Gagal memuat model NLP. Error: {e}")
     intent_tokenizer, intent_model, id2label = None, None, {}
@@ -204,6 +204,23 @@ def fetch_dynamic_context(query_text, query_embedding, table_name, top_k=2, extr
         cur.close()
         conn.close()
 
+def get_intent_tipe_pengguna(intent_label):
+    """Mengambil himpunan tipe_pengguna (lowercase) pada knowledge_base untuk intent tertentu."""
+    conn = psycopg2.connect(**DB_CONFIG)
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT DISTINCT LOWER(tipe_pengguna) FROM knowledge_base WHERE LOWER(intent) = LOWER(%s);",
+            (intent_label,),
+        )
+        return {row[0] for row in cur.fetchall()}
+    except Exception as e:
+        print(f"[DB ERROR] get_intent_tipe_pengguna: {e}")
+        return set()
+    finally:
+        cur.close()
+        conn.close()
+
 # --- MODEL REQUEST UNTUK API ---
 class ChatMessage(BaseModel):
     role: str
@@ -253,18 +270,31 @@ async def _generate_chat_response(req: ChatRequest):
     search_query = f"{user_msgs[-1]} {safe_prompt}" if is_follow_up and user_msgs else safe_prompt
     
     intent = get_intent(safe_prompt)
-    clean_query = preprocess_text(search_query)
-    if not clean_query.strip():
-        clean_query = search_query.strip()
-    query_embed = get_embedding(clean_query)
-    
-    # 3. Filter DB berdasarkan role user
-    is_prosedur = any(k in current_lower for k in ["prosedur", "surat", "bagaimana", "pengajuan", "cuti", "cara", "syarat", "mekanisme", "melihat", "waktu", "dimana", "print", "membuat", "mengajukan", "mengambil", "melakukan", "cetak", "layanan", "terbit", "daftar", "mendaftar", "meminjam", "toss"])
-    is_user_query = any(k in current_lower for k in ["dosen", "mahasiswa", "nim", "nip", "kelas", "angkatan"])
 
     # Validasi user_mode dengan allowlist sebelum diinterpolasi ke SQL
     _VALID_ROLES = {"mahasiswa", "dosen"}
     safe_role = req.user_mode.lower() if req.user_mode.lower() in _VALID_ROLES else "mahasiswa"
+
+    # Mahasiswa menanyakan layanan yang intent-nya teridentifikasi sebagai layanan
+    # khusus dosen -> tolak langsung tanpa memanggil LLM (deterministik, tidak
+    # tergantung interpretasi model atas konteks yang sudah difilter berdasarkan role).
+    if safe_role == "mahasiswa" and intent != "all" and get_intent_tipe_pengguna(intent) == {"dosen"}:
+        return {
+            "output": (
+                f"Mohon maaf, layanan **{intent}** merupakan layanan khusus untuk dosen "
+                "dan tidak dapat diakses melalui akun mahasiswa."
+            ),
+            "suggest_ticket": False,
+        }
+
+    clean_query = preprocess_text(search_query)
+    if not clean_query.strip():
+        clean_query = search_query.strip()
+    query_embed = get_embedding(clean_query)
+
+    # 3. Filter DB berdasarkan role user
+    is_prosedur = any(k in current_lower for k in ["prosedur", "surat", "bagaimana", "pengajuan", "cuti", "cara", "syarat", "mekanisme", "melihat", "waktu", "dimana", "print", "membuat", "mengajukan", "mengambil", "melakukan", "cetak", "layanan", "terbit", "daftar", "mendaftar", "meminjam", "toss"])
+    is_user_query = any(k in current_lower for k in ["dosen", "mahasiswa", "nim", "nip", "kelas", "angkatan"])
 
     sql_users_filter = " AND role = 'dosen'" if safe_role == "mahasiswa" else ""
     # Mahasiswa: layanan mahasiswa (LAA + Referral) + semua entri Referral
