@@ -280,10 +280,7 @@ async def _generate_chat_response(req: ChatRequest):
     # tergantung interpretasi model atas konteks yang sudah difilter berdasarkan role).
     if safe_role == "mahasiswa" and intent != "all" and get_intent_tipe_pengguna(intent) == {"dosen"}:
         return {
-            "output": (
-                f"Mohon maaf, layanan **{intent}** merupakan layanan khusus untuk dosen "
-                "dan tidak dapat diakses melalui akun mahasiswa."
-            ),
+            "output": "Mohon maaf, informasi tersebut tidak tersedia dalam sistem kami.",
             "suggest_ticket": False,
         }
 
