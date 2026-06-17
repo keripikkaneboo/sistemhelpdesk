@@ -4,8 +4,8 @@ import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { rateLimit } from "@/lib/rateLimit";
 
-// Per-akun (NIM/NIP): 3x / jam
-const resetLimiter = rateLimit({ interval: 60 * 60_000, limit: 3 });
+// Per-akun (NIM/NIP): 5x / jam
+const resetLimiter = rateLimit({ interval: 60 * 60_000, limit: 5 });
 
 export async function POST(request: Request) {
   try {
