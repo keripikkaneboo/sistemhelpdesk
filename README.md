@@ -59,7 +59,7 @@ Repo ini adalah **monorepo** yang terdiri dari tiga aplikasi independen yang ber
 | Frontend (User App) | Next.js 16, React 19, TypeScript, Tailwind CSS 4, Anime.js |
 | Admin Panel | Next.js 16, React 19, TypeScript, Tailwind CSS |
 | Backend Chatbot | Python, FastAPI, Uvicorn |
-| AI / RAG | Ollama (`gemma3:12b` untuk generasi jawaban, `nomic-embed-text` untuk embedding 768 dimensi), Transformers (klasifikasi intent), PySastrawi (stemming Bahasa Indonesia) |
+| AI / RAG | Ollama (`gemma3:12b` untuk generasi jawaban, `nomic-embed-text` untuk embedding 768 dimensi), PySastrawi (stemming Bahasa Indonesia) |
 | Database | PostgreSQL 16 + ekstensi pgvector |
 | Autentikasi | JWT (`jose`) + httpOnly cookie, hashing password dengan `bcryptjs` |
 | Email | Nodemailer (reset password) |
